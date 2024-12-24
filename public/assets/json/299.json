@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9b181e5a1c13b273393b0bfc929c4d9782af7e4db05e8322ee6883a9ab5b5b96
-size 571
+{
+  "name": "Croak City Purple #299",
+  "description": "A unique collection of Croak City Purple frogs",
+  "image": "ipfs://CroakCityPurple/79.png",
+  "dna": "3850ddb844abe29d722f352c36c946ed5c01e78a",
+  "edition": 299,
+  "date": 1734990144551,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Stoop"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Wink"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Piff"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Halo"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

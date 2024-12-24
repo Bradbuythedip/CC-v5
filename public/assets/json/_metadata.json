@@ -1,3 +1,3242 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c01df5cb58c556c0f3646c2df3ace699a1ae2bde2cb5dd7b5d55e489522b9a67
-size 75518
+[
+  {
+    "name": "Croak City Red #1",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/1.png",
+    "dna": "f9231d819f83b102779e552a52264ba87c4ceec7",
+    "edition": 1,
+    "date": 1734989932086,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #2",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/2.png",
+    "dna": "2e64a0e976c97a43c125321fca620338fc4f19a3",
+    "edition": 2,
+    "date": 1734989932204,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #3",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/3.png",
+    "dna": "81ffbd76db29e12c4a584abcb13e150bf71930f9",
+    "edition": 3,
+    "date": 1734989932282,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #4",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/4.png",
+    "dna": "7a5c67c425c548bfd1c374eb3bdce6ac328751a1",
+    "edition": 4,
+    "date": 1734989932365,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #5",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/5.png",
+    "dna": "e8703ff6f4746c0b5f4a87f9de89be1664f6f440",
+    "edition": 5,
+    "date": 1734989932443,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Crown"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #6",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/6.png",
+    "dna": "7d2f091b2afe9b8308f2e0ccbdf2a5d340eb048c",
+    "edition": 6,
+    "date": 1734989932520,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #7",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/7.png",
+    "dna": "2beb46455fc3d38dafca4ed9e75a91cee8f4efc8",
+    "edition": 7,
+    "date": 1734989932589,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #8",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/8.png",
+    "dna": "1927fffe779fa9632587908769bb8314bd8f0a94",
+    "edition": 8,
+    "date": 1734989932704,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #9",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/9.png",
+    "dna": "a0f027fd243d8f09cd35790b8ae032125aaa8c9c",
+    "edition": 9,
+    "date": 1734989932777,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #10",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/10.png",
+    "dna": "ad1804e694f7f8a0a464309353db8ae961afba77",
+    "edition": 10,
+    "date": 1734989932849,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #11",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/11.png",
+    "dna": "3c87a5b1894d066007cf21edb79dd7366ab13c30",
+    "edition": 11,
+    "date": 1734989932930,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #12",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/12.png",
+    "dna": "1ffb637ac3cf1d78780c0eb91968efe8204fc23c",
+    "edition": 12,
+    "date": 1734989933087,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Royal Cape"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #13",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/13.png",
+    "dna": "b8d1dbd24f7d8ad3b8ed44b8617c19d6bcdc1f60",
+    "edition": 13,
+    "date": 1734989933159,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #14",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/14.png",
+    "dna": "6bbb113729d8f08ca491706b6964aa2354eaece4",
+    "edition": 14,
+    "date": 1734989933280,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #15",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/15.png",
+    "dna": "2f3c058f122d60fa23cd83277d040b045d7c06b5",
+    "edition": 15,
+    "date": 1734989933378,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Golf Ball"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #16",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/16.png",
+    "dna": "619520aa880b3cc8076c75f922c37b446744b7e4",
+    "edition": 16,
+    "date": 1734989933458,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #17",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/17.png",
+    "dna": "cd5383783cac192cc74cd528aa43e5f5c564641d",
+    "edition": 17,
+    "date": 1734989933533,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #18",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/18.png",
+    "dna": "22790f9ed6dfeca23cf490e9c9d70756e0c952c5",
+    "edition": 18,
+    "date": 1734989933647,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #19",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/19.png",
+    "dna": "2e85caff29f9ddf526dbc672b57e2825f095e1ef",
+    "edition": 19,
+    "date": 1734989933745,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #20",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/20.png",
+    "dna": "898cccb4144bd007b01557363e21c44e6625a0b8",
+    "edition": 20,
+    "date": 1734989933818,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #21",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/21.png",
+    "dna": "7a6ab25d82f784a4c8c76a726056aac5f2e4223e",
+    "edition": 21,
+    "date": 1734989933887,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #22",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/22.png",
+    "dna": "849fe3159480f14cae0c12060d9f7c1506cbcb7e",
+    "edition": 22,
+    "date": 1734989933963,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Crown"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #23",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/23.png",
+    "dna": "c29325e145bb5ed310cf93b390b86da8dcaf2071",
+    "edition": 23,
+    "date": 1734989934027,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #24",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/24.png",
+    "dna": "0c4a036c14a5e37111ac2816de2f5a74a90a64a9",
+    "edition": 24,
+    "date": 1734989934097,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #25",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/25.png",
+    "dna": "8ca3fae623d0a09e842dd85fb29f6dde0e98372f",
+    "edition": 25,
+    "date": 1734989934163,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #26",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/26.png",
+    "dna": "4968c1596d58f41e8e365fcbcd9bb623ca9b4944",
+    "edition": 26,
+    "date": 1734989934238,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #27",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/27.png",
+    "dna": "f02250c20395671c49cf94d75fd37d5a05f49c10",
+    "edition": 27,
+    "date": 1734989934305,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #28",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/28.png",
+    "dna": "d08006f14c3df2d73a058a6858b1df538ef99b78",
+    "edition": 28,
+    "date": 1734989934424,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #29",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/29.png",
+    "dna": "b3fa74287acb0b29cd3289cad47f32e51129ec7c",
+    "edition": 29,
+    "date": 1734989934508,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Royal Cape"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #30",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/30.png",
+    "dna": "d907906e1ac1b4d6d81846dc1c8d4289955442fe",
+    "edition": 30,
+    "date": 1734989934584,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Crown"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #31",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/31.png",
+    "dna": "40ac1905a8533bfbb57dabdcb4a1e5c4cc714aef",
+    "edition": 31,
+    "date": 1734989934648,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #32",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/32.png",
+    "dna": "80f2754ca5d77c387614a51ee64be85a46ed34c2",
+    "edition": 32,
+    "date": 1734989934808,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #33",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/33.png",
+    "dna": "7bf893a9fcbbe6f4d739bd76fe432432238c9f47",
+    "edition": 33,
+    "date": 1734989934880,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #34",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/34.png",
+    "dna": "97f226a47e9bcb3e2a3441bb932b29710ce14a5b",
+    "edition": 34,
+    "date": 1734989934960,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Royal Cape"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #35",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/35.png",
+    "dna": "93d628ff03ff71f4cd4db264f32d168984176412",
+    "edition": 35,
+    "date": 1734989935062,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #36",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/36.png",
+    "dna": "fbe7478a5df45958244ffbcfd240a22613ed3c2d",
+    "edition": 36,
+    "date": 1734989935132,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #37",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/37.png",
+    "dna": "5560cddacb7559e305185589bc1568b5df945c5f",
+    "edition": 37,
+    "date": 1734989935207,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #38",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/38.png",
+    "dna": "823806459be4ba3f6508de6a1edc2b30f5826358",
+    "edition": 38,
+    "date": 1734989935271,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #39",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/39.png",
+    "dna": "584f77b0e73579b3c1b3a570ed15ad4ed8b86e42",
+    "edition": 39,
+    "date": 1734989935431,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Royal Cape"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #40",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/40.png",
+    "dna": "043cf64a7e71310f9bc24d8d7744c0d32eb8e458",
+    "edition": 40,
+    "date": 1734989935527,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #41",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/41.png",
+    "dna": "71c52664d41ab1954f02c7c666fcfa7c941d54d7",
+    "edition": 41,
+    "date": 1734989935707,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #42",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/42.png",
+    "dna": "3ec7bf3d2f8da9ff6b04a71d2b6b1ba2ced1df4c",
+    "edition": 42,
+    "date": 1734989935784,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #43",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/43.png",
+    "dna": "922cd540d2ae739513d640d93a99854c5f864ced",
+    "edition": 43,
+    "date": 1734989935855,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #44",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/44.png",
+    "dna": "9bd2b54fb2f80fdcd2cc0c1c2d73bfe6de244c74",
+    "edition": 44,
+    "date": 1734989935926,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #45",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/45.png",
+    "dna": "233561144a8d5cd1bda1f0569abeab98818e89ab",
+    "edition": 45,
+    "date": 1734989936009,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #46",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/46.png",
+    "dna": "762627f3563444d6d0ed182f9ee50c99e8d96584",
+    "edition": 46,
+    "date": 1734989936119,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #47",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/47.png",
+    "dna": "19d315b1ff3c383608195632a01c6bbd78a6e2dd",
+    "edition": 47,
+    "date": 1734989936195,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Crown"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #48",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/48.png",
+    "dna": "fc13511c7a83ba2f6e93905f9d2fe29158153692",
+    "edition": 48,
+    "date": 1734989936315,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #49",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/49.png",
+    "dna": "54246aaa687cff021d4d43ce8ec0871647bcfae6",
+    "edition": 49,
+    "date": 1734989936423,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #50",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/50.png",
+    "dna": "0bd8fc5a2ab6d917f72f14622e1e9e77c291e77d",
+    "edition": 50,
+    "date": 1734989936538,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #51",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/51.png",
+    "dna": "a81fbb6d1d12043c36b3afea03cf4a3bcaec21bc",
+    "edition": 51,
+    "date": 1734989936602,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #52",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/52.png",
+    "dna": "11f91d418f993388028594cb4bc4f8cc69fc3470",
+    "edition": 52,
+    "date": 1734989936670,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #53",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/53.png",
+    "dna": "2c43bbfb4fd00dbd64bb0ac89b8dcb613a8daa42",
+    "edition": 53,
+    "date": 1734989936742,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #54",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/54.png",
+    "dna": "784dd515c00719de99a0fbef1ef0b29009bb20a2",
+    "edition": 54,
+    "date": 1734989936814,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #55",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/55.png",
+    "dna": "1002fa7954a834fe892c439fa798c6658722e254",
+    "edition": 55,
+    "date": 1734989936887,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #56",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/56.png",
+    "dna": "0400a159927057c151eb2ccceb9091f445c85ec0",
+    "edition": 56,
+    "date": 1734989937029,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #57",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/57.png",
+    "dna": "596b1bb82b2b95d345fe249feffd2584002602a5",
+    "edition": 57,
+    "date": 1734989937101,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #58",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/58.png",
+    "dna": "f5fc446ab031462a8b6bd20e8225d1ed815a9a61",
+    "edition": 58,
+    "date": 1734989937172,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #59",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/59.png",
+    "dna": "68a0963a899bb1327f188c85ee8a3f20ccec1840",
+    "edition": 59,
+    "date": 1734989937333,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #60",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/60.png",
+    "dna": "8d4f6fe18a8ddd6a791c5a2699244d53b87228ce",
+    "edition": 60,
+    "date": 1734989937406,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #61",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/61.png",
+    "dna": "48a4b69844efc080a36b3856e743c541b5e420a5",
+    "edition": 61,
+    "date": 1734989937484,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #62",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/62.png",
+    "dna": "49175d74fce13d5b7d46c00659cbf56ddd2c819e",
+    "edition": 62,
+    "date": 1734989937549,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #63",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/63.png",
+    "dna": "6e37dc4fa12622630885de7405cf518a758ed695",
+    "edition": 63,
+    "date": 1734989937629,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #64",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/64.png",
+    "dna": "b93834a6eb712bfd5bc081060dbe66b22c8826ee",
+    "edition": 64,
+    "date": 1734989937693,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #65",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/65.png",
+    "dna": "54bba605d972a162665162b8291d643047581836",
+    "edition": 65,
+    "date": 1734989937812,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #66",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/66.png",
+    "dna": "5acd33c897b1cfcadcbf3709dc64a0a138bd3b07",
+    "edition": 66,
+    "date": 1734989937877,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #67",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/67.png",
+    "dna": "fed288849324fcb2799ca6c440ea10f508bc3632",
+    "edition": 67,
+    "date": 1734989937954,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #68",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/68.png",
+    "dna": "e7d103665e2abb254ce55dd2547094cd57271007",
+    "edition": 68,
+    "date": 1734989938034,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #69",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/69.png",
+    "dna": "0f1007f2a2cf0c94a7fbc1a281a72f63aa924e47",
+    "edition": 69,
+    "date": 1734989938105,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #70",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/70.png",
+    "dna": "e4de60a4fcab287ea5e65841060a310cd28ca180",
+    "edition": 70,
+    "date": 1734989938177,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #71",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/71.png",
+    "dna": "15fd4cef1d38c5ad64e7a6d1d2bc2efd0a382856",
+    "edition": 71,
+    "date": 1734989938275,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #72",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/72.png",
+    "dna": "f1fc01d74f1a604385c458d159e38f8fe1a6690c",
+    "edition": 72,
+    "date": 1734989938388,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #73",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/73.png",
+    "dna": "b5d10bce2f9b654afc993f4dca08147f1e34fd0d",
+    "edition": 73,
+    "date": 1734989938455,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #74",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/74.png",
+    "dna": "72ac2d24537f47699d26d3cd8dec68ad3fad1b4d",
+    "edition": 74,
+    "date": 1734989938535,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #75",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/75.png",
+    "dna": "a3122538b1859b625b4ee7aa19cf67cc4f862c47",
+    "edition": 75,
+    "date": 1734989938610,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Crown"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #76",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/76.png",
+    "dna": "7c72a3dc5a24a182e9fab27a7c2c3ca35f75d7e2",
+    "edition": 76,
+    "date": 1734989938681,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #77",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/77.png",
+    "dna": "d5bece86549eb3f72f75c632bbbd40de5a392fdf",
+    "edition": 77,
+    "date": 1734989938797,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #78",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/78.png",
+    "dna": "e219f4129beaea5a76937a96ebb82a17895610e5",
+    "edition": 78,
+    "date": 1734989938875,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #79",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/79.png",
+    "dna": "3d7820a2db26df87c5ca15ed1365607941587b61",
+    "edition": 79,
+    "date": 1734989938940,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #80",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/80.png",
+    "dna": "8569df99bb628f45ad081af011e6ba3572356704",
+    "edition": 80,
+    "date": 1734989939013,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #81",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/81.png",
+    "dna": "859bc93767b68b61560f422019a5518cf425ee0e",
+    "edition": 81,
+    "date": 1734989939085,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #82",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/82.png",
+    "dna": "8853ff0756b9b2fe32c86475210a311249782d81",
+    "edition": 82,
+    "date": 1734989939208,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Royal Cape"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #83",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/83.png",
+    "dna": "f6766e86ea9fd278ada8080448cdc8b560268770",
+    "edition": 83,
+    "date": 1734989939271,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #84",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/84.png",
+    "dna": "5c6de106fbb162c48d861bfc5f52d6db58a074ef",
+    "edition": 84,
+    "date": 1734989939335,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #85",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/85.png",
+    "dna": "0c530432cb63451efc425e84a99bf2d0fa2e51b8",
+    "edition": 85,
+    "date": 1734989939449,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Golf Ball"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #86",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/86.png",
+    "dna": "de38308b58d888760fb2573111de19c9fe979429",
+    "edition": 86,
+    "date": 1734989939521,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #87",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/87.png",
+    "dna": "7aef4db5711e6efce526371c82a175758bd7260a",
+    "edition": 87,
+    "date": 1734989939593,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #88",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/88.png",
+    "dna": "9a93a1752bc528354657b691b8dc88d4b66096af",
+    "edition": 88,
+    "date": 1734989939670,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Circus Hat"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #89",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/89.png",
+    "dna": "e8dd1cceb5e673cf9750458d9898de7d829b65ca",
+    "edition": 89,
+    "date": 1734989939734,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #90",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/90.png",
+    "dna": "0d119694bfaf100a7f2aae7b7aa261b67f8febe7",
+    "edition": 90,
+    "date": 1734989939809,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Proof"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #91",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/91.png",
+    "dna": "2d91d829bdcb19cd377a3b50b8684e62557f4478",
+    "edition": 91,
+    "date": 1734989939889,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #92",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/92.png",
+    "dna": "9657140b813b89063f3b66ca453e75be5611b73e",
+    "edition": 92,
+    "date": 1734989939953,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #93",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/93.png",
+    "dna": "0f3eb967b494fcd0e88303c72819f185196baacd",
+    "edition": 93,
+    "date": 1734989940025,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #94",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/94.png",
+    "dna": "8e1e8a3c957700b2ee4d53a6f86537aabbfef4b5",
+    "edition": 94,
+    "date": 1734989940097,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #95",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/95.png",
+    "dna": "0ce8e45e0a55029a0650550bc2ee7d24b738d6d2",
+    "edition": 95,
+    "date": 1734989940171,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #96",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/96.png",
+    "dna": "e4e5880137b35a4732fbdb6d0e0ad538c164ca95",
+    "edition": 96,
+    "date": 1734989940246,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #97",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/97.png",
+    "dna": "94dcdc5cad5784a178c976b50ecbfe6f19d7ef2e",
+    "edition": 97,
+    "date": 1734989940317,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #98",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/98.png",
+    "dna": "1cd3aaa48ec73f305f475085564b2a795158d083",
+    "edition": 98,
+    "date": 1734989940389,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #99",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/99.png",
+    "dna": "aecd98b5976080f2a26f58b364e461f1251149e0",
+    "edition": 99,
+    "date": 1734989940452,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #100",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/100.png",
+    "dna": "b7a25d3e67730fc3bfbef1e2a1fb754a525d73c0",
+    "edition": 100,
+    "date": 1734989940527,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Baby Blue"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Royal Cape"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #101",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/101.png",
+    "dna": "da58ad4d29b2dd6fc16f1c439593392368497368",
+    "edition": 101,
+    "date": 1734989940603,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #102",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/102.png",
+    "dna": "2664f9a301b885bad881acb6a6b1c27da228a78f",
+    "edition": 102,
+    "date": 1734989940781,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Grin"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Glow"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #103",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/103.png",
+    "dna": "0bab7ea5ee392015e8079b5eece81501fc00fcb3",
+    "edition": 103,
+    "date": 1734989940851,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Le Frog"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #104",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/104.png",
+    "dna": "641ae33403728a7d1c11b35daa90f0241c7a5635",
+    "edition": 104,
+    "date": 1734989940915,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #105",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/105.png",
+    "dna": "d73fb08c107da0159cb8a2c28b4b00a3f5970974",
+    "edition": 105,
+    "date": 1734989940991,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Sand"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #106",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/106.png",
+    "dna": "fb623fe3f3c35612a69ac111d10205594ea9444c",
+    "edition": 106,
+    "date": 1734989941103,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Matrix"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #107",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/107.png",
+    "dna": "8492e90cf063c2ed1c9c77cd0ac44a05ecacb0fe",
+    "edition": 107,
+    "date": 1734989941415,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Golf Course"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #108",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/108.png",
+    "dna": "36011ee6087cf29bbf0147802612cafba07e8684",
+    "edition": 108,
+    "date": 1734989941575,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #109",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/109.png",
+    "dna": "9f6edf56f67614e1dcb4e5ff6a95d81521dd0cc0",
+    "edition": 109,
+    "date": 1734989941655,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Gold"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Neckbeard"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #110",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/110.png",
+    "dna": "4cb34888958f8b6897187e70c3904f4edcedbb70",
+    "edition": 110,
+    "date": 1734989941766,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Wink"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #111",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/111.png",
+    "dna": "4e2dbdcd068955aff1a325ce22efa5e5e594d5b5",
+    "edition": 111,
+    "date": 1734989941919,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Meh"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Mlady"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #112",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/112.png",
+    "dna": "642ad14a45bbc6ee59facfca0e873fc4fdd9b7bd",
+    "edition": 112,
+    "date": 1734989941990,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Grey"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #113",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/113.png",
+    "dna": "da94862f96c18e4812c6153960b340d99bf76615",
+    "edition": 113,
+    "date": 1734989942104,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #114",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/114.png",
+    "dna": "3fd008f2931cdca9ec07650b4baa0b0811232d0d",
+    "edition": 114,
+    "date": 1734989942174,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Karate Master"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #115",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/115.png",
+    "dna": "0a8517502f42ae1a2a203162b6a14ddb4801470e",
+    "edition": 115,
+    "date": 1734989942248,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Navy"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Happy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Club"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #116",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/116.png",
+    "dna": "697d652aab4274474e0298925e70ea78d797c851",
+    "edition": 116,
+    "date": 1734989942365,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Stoop"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Tears"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #117",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/117.png",
+    "dna": "7c8e4c5ec1af9a04cb881c710ed46fde85f58710",
+    "edition": 117,
+    "date": 1734989942428,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Crazy Eyes"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "O Mouth"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #118",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/118.png",
+    "dna": "e45b91c1ce2a96a27c24b6f3a25aad39cd204dbd",
+    "edition": 118,
+    "date": 1734989942587,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Lily Pad"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Piff"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #119",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/119.png",
+    "dna": "ee8081bd3cf701c00df9d46bb0a38a22dd76666b",
+    "edition": 119,
+    "date": 1734989942657,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Down"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Regular"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "Halo"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  },
+  {
+    "name": "Croak City Red #120",
+    "description": "A collection of unique green frogs from Croak City",
+    "image": "https://www.croakcity.com/assets/images/120.png",
+    "dna": "816473c063cadb3f6a8567f26135f21bb5846955",
+    "edition": 120,
+    "date": 1734989942719,
+    "attributes": [
+      {
+        "trait_type": "Background",
+        "value": "Purple"
+      },
+      {
+        "trait_type": "Eyes",
+        "value": "Cool"
+      },
+      {
+        "trait_type": "Mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "Accessories",
+        "value": "None"
+      }
+    ],
+    "compiler": "HashLips Art Engine"
+  }
+]

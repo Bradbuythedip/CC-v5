@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:004f23a6ed6ae06610f6a7d123f417891d2f30be9c46f0f741188f9ebf95600d
-size 582
+{
+  "name": "Croak City Red #88",
+  "description": "A collection of unique green frogs from Croak City",
+  "image": "https://www.croakcity.com/assets/images/88.png",
+  "dna": "9a93a1752bc528354657b691b8dc88d4b66096af",
+  "edition": 88,
+  "date": 1734989939670,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Proof"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Happy Eyes"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Regular"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Circus Hat"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

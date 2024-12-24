@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e599f29d07c2670403142f79fbfc15b1287e395b860e46e08068520f58d58821
-size 579
+{
+  "name": "Croak City Brown #136",
+  "description": "A unique collection of Croak City Brown frogs",
+  "image": "ipfs://CroakCityBrown/16.png",
+  "dna": "5ff9e032e75c0826f2fd8e07e278101c6d6e5426",
+  "edition": 136,
+  "date": 1734990100002,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Navy"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Regular"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Regular"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Royal Cape"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

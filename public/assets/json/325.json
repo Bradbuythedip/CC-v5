@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f6d2c7245b5276c159023c00fb091bf46539a4ce0bf5828f3baa454de1e8e492
-size 584
+{
+  "name": "Croak City Orange #325",
+  "description": "A unique collection of Croak City Orange frogs",
+  "image": "ipfs://CroakCityOrange/25.png",
+  "dna": "3f7f4a3494d9b8bf2222ff6c09a4213c4e47bb12",
+  "edition": 325,
+  "date": 1734990170879,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Baby Blue"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Down"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Grin"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Karate Master"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}
