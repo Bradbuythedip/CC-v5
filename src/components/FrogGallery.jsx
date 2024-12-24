@@ -2,24 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
 const getImageUrl = (frogId) => {
-  // Try to get image from public assets
-  try {
-    return new URL(`/assets/images/${frogId}.png`, window.location.origin).href;
-  } catch (error) {
-    console.error('Error creating image URL:', error);
-    return `/assets/images/${frogId}.png`;
-  }
+  return `/assets/images/${frogId}.png`;
 };
 
 // Function to check if image exists
 const checkImage = async (frogId) => {
-  try {
-    const response = await fetch(getImageUrl(frogId), { method: 'HEAD' });
-    return response.ok;
-  } catch (error) {
-    console.error('Error checking image:', error);
-    return false;
-  }
+  return true; // Assume all images exist since we verified they're in the public folder
 };
 
 // Generate an array of random numbers between 1 and 420
@@ -231,8 +219,7 @@ const FrogGallery = () => {
               },
             }}
           >
-            {status.exists ? (
-              <Box
+            <Box
                 sx={{
                   width: '100%',
                   height: '100%',
@@ -241,7 +228,7 @@ const FrogGallery = () => {
                 }}
               >
                 <img
-                  src={status.url}
+                  src={getImageUrl(frogId)}
                   alt={`Quai Frog #${frogId}`}
                   loading="lazy"
                   onError={(e) => {
@@ -257,29 +244,6 @@ const FrogGallery = () => {
                   }}
                 />
               </Box>
-            ) : (
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#1a472a',
-                  color: '#00ff9d',
-                  padding: '16px',
-                }}
-              >
-                <CircularProgress 
-                  size={20}
-                  sx={{ 
-                    color: '#00ff9d',
-                    opacity: 0.8
-                  }} 
-                />
-              </Box>
-            )}
           </Box>
         );
       })}

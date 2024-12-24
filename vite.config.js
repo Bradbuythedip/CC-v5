@@ -2,11 +2,28 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   base: '/',
-  publicDir: 'public',
+  server: {
+    port: 5173,
+    host: true,
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    proxy: {
+      '/api/coingecko': {
+        target: 'https://api.coingecko.com/api/v3',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/coingecko/, ''),
+      },
+    },
+    fs: {
+      strict: false,
+      allow: ['..']
+    },
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -20,7 +37,6 @@ export default defineConfig({
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
           
-          // Preserve the original path for images in the assets/images directory
           if (assetInfo.name.includes('assets/images/')) {
             return assetInfo.name;
           }
@@ -47,20 +63,5 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
-  },
-  server: {
-    port: 5173,
-    host: true,
-    cors: true,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-    },
-    proxy: {
-      '/api/coingecko': {
-        target: 'https://api.coingecko.com/api/v3',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/coingecko/, ''),
-      },
-    },
   },
 })

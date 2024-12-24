@@ -112,39 +112,47 @@ const Analytics = () => {
               per_page: 20,
               page: 1,
               sparkline: false,
-              price_change_percentage: '1h,24h,7d'
+              price_change_percentage: '24h'
+            },
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
             }
           }
         );
 
-        setData(response.data);
-        setLastUpdate(new Date());
-        setLoading(false);
+        if (response.data && Array.isArray(response.data)) {
+          setData(response.data);
+          setLastUpdate(new Date());
+          setError(null);
+        } else {
+          throw new Error('Invalid data format received');
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to fetch market data');
+        if (err.response?.status === 429) {
+          setError('Rate limit exceeded. Please try again in a minute.');
+        } else {
+          setError('Failed to fetch market data. Please try again later.');
+        }
+      } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    // Update every 2 minutes to avoid rate limiting
+    const interval = setInterval(fetchData, 120000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <Box 
-      component="main"
       sx={{ 
-        minHeight: '100vh', 
-        backgroundColor: 'background.default', 
-        pt: 8, 
-        pb: 4,
-        position: 'relative',
-        zIndex: 0
+        width: '100%',
+        pb: 4
       }}
     >
-      <Container maxWidth="xl">
         <Typography 
           variant="h4" 
           gutterBottom 
@@ -200,9 +208,20 @@ const Analytics = () => {
             <CircularProgress />
           </Box>
         ) : error ? (
-          <Typography color="error" align="center">
-            {error}
-          </Typography>
+          <Card sx={{ 
+            p: 3, 
+            textAlign: 'center',
+            background: 'rgba(255, 68, 68, 0.1)',
+            border: '1px solid rgba(255, 68, 68, 0.3)',
+            borderRadius: '12px'
+          }}>
+            <Typography color="error" sx={{ mb: 1 }}>
+              {error}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              The data will automatically refresh when available.
+            </Typography>
+          </Card>
         ) : (
           <>
             <Grid container spacing={3}>
@@ -364,7 +383,6 @@ const Analytics = () => {
             )}
           </>
         )}
-      </Container>
     </Box>
   );
 };

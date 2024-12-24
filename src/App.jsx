@@ -6,11 +6,11 @@ import Analytics from './components/Analytics';
 import { SharedNavBar, NAVBAR_HEIGHT } from './components/SharedNavBar';
 import Roadmap from './components/Roadmap';
 import FrogGallery from './components/FrogGallery';
+import Trending from './components/Trending';
+import FearAndGreed from './components/FearAndGreed';
 import theme from './theme';
 
 function App() {
-  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-
   return (
     <Router>
       <ThemeProvider theme={theme}>
@@ -23,24 +23,6 @@ function App() {
             padding: '20px'
           }}
         >
-          {!isChrome && (
-            <Box
-              sx={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: 'rgba(255, 68, 68, 0.9)',
-                color: 'white',
-                textAlign: 'center',
-                py: 1,
-                zIndex: 1000,
-                fontSize: '0.9rem'
-              }}
-            >
-              Please use Chrome browser for the best experience and Pelagus wallet compatibility.
-            </Box>
-          )}
           <SharedNavBar />
           <Routes>
             <Route 
@@ -88,7 +70,50 @@ function App() {
                 </Box>
               } 
             />
-            <Route path="/analytics" element={<Analytics />} />
+            <Route 
+              path="/analytics" 
+              element={
+                <Box component="main">
+                  <Container maxWidth="xl" sx={{ 
+                    position: 'relative', 
+                    mt: 0,
+                    pt: '64px', // Height of navbar
+                  }}>
+                    <Analytics />
+                  </Container>
+                </Box>
+              } 
+            />
+            <Route 
+              path="/trending" 
+              element={
+                <Box component="main">
+                  <Container maxWidth="xl" sx={{ 
+                    position: 'relative', 
+                    mt: 0,
+                    pt: '64px',
+                  }}>
+                    <Trending />
+                  </Container>
+                </Box>
+              } 
+            />
+            <Route 
+              path="/fear-and-greed" 
+              element={
+                <Box 
+                  component="main" 
+                  sx={{ 
+                    position: 'relative',
+                    height: '100vh',
+                    width: '100vw',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <FearAndGreed />
+                </Box>
+              } 
+            />
           </Routes>
         </Box>
       </ThemeProvider>
