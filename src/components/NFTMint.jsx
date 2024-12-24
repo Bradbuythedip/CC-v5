@@ -7,7 +7,7 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
-import { quais } from 'quais';
+import { Contract, providers, utils } from 'quais';
 
 const NFT_CONTRACT_ADDRESS = "0x002Bd6201a1421e7c998566650d161a8f5047d7a";
 const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
@@ -45,9 +45,9 @@ const NFTMint = () => {
 
       try {
         if (typeof window.pelagus !== 'undefined') {
-          const provider = new quais.providers.Web3Provider(window.pelagus);
+          const provider = new providers.Web3Provider(window.pelagus, "any");
           const signer = provider.getSigner();
-          const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+          const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
           const total = await contract.totalSupply();
           const max = await contract.maxSupply();
@@ -60,7 +60,7 @@ const NFTMint = () => {
         }
       } catch (err) {
         console.error("Error loading contract data:", err);
-        setError("Error loading contract data");
+        setError(`Error loading contract data: ${err.message}`);
       }
     };
 
@@ -100,12 +100,12 @@ const NFTMint = () => {
         throw new Error("Please install Pelagus wallet");
       }
 
-      const provider = new quais.providers.Web3Provider(window.pelagus);
+      const provider = new providers.Web3Provider(window.pelagus, "any");
       const signer = provider.getSigner();
-      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const mintTx = await contract.mint({
-        value: hasFreeMint ? 0 : quais.utils.parseEther("1")
+        value: hasFreeMint ? 0 : utils.parseEther("1")
       });
 
       await mintTx.wait();
