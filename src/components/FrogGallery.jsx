@@ -30,32 +30,50 @@ const FrogGallery = () => {
   const [displayedFrogs, setDisplayedFrogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imageStatus, setImageStatus] = useState({});
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadImages = async () => {
-      const frogs = getRandomFrogs(24);
-      setDisplayedFrogs(frogs);
-      
-      // Check each image
-      const status = {};
-      for (const frogId of frogs) {
-        const assetPath = `/assets/images/${frogId}.png`;
-        // Try both absolute and relative paths
-        const absoluteUrl = assetPath;
-        const relativeUrl = assetPath.startsWith('/') ? assetPath.slice(1) : assetPath;
+      try {
+        setLoading(true);
+        setError(null);
+        const frogs = getRandomFrogs(24);
+        setDisplayedFrogs(frogs);
         
-        console.log('Attempting to load image with paths:', { absoluteUrl, relativeUrl });
-        
-        // Try absolute path first, then fallback to relative
-        const exists = await checkImage(absoluteUrl) || await checkImage(relativeUrl);
-        
-        status[frogId] = {
-          url: exists ? absoluteUrl : relativeUrl,
-          exists
-        };
+        // Check each image
+        const status = {};
+        for (const frogId of frogs) {
+          try {
+            const assetPath = `/assets/images/${frogId}.png`;
+            // Try both absolute and relative paths
+            const absoluteUrl = assetPath;
+            const relativeUrl = assetPath.startsWith('/') ? assetPath.slice(1) : assetPath;
+            
+            console.log('Attempting to load image with paths:', { absoluteUrl, relativeUrl });
+            
+            // Try absolute path first, then fallback to relative
+            const exists = await checkImage(absoluteUrl) || await checkImage(relativeUrl);
+            
+            status[frogId] = {
+              url: exists ? absoluteUrl : relativeUrl,
+              exists
+            };
+          } catch (imageError) {
+            console.error(`Error loading image for frog #${frogId}:`, imageError);
+            status[frogId] = {
+              url: `/assets/images/${frogId}.png`,
+              exists: false,
+              error: imageError.message
+            };
+          }
+        }
+        setImageStatus(status);
+      } catch (e) {
+        console.error('Error in loadImages:', e);
+        setError(e.message);
+      } finally {
+        setLoading(false);
       }
-      setImageStatus(status);
-      setLoading(false);
     };
 
     loadImages();
@@ -65,6 +83,19 @@ const FrogGallery = () => {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress sx={{ color: '#00ff9d' }} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="200px">
+        <Typography color="error" gutterBottom>
+          Error loading gallery
+        </Typography>
+        <Typography variant="caption" color="textSecondary">
+          {error}
+        </Typography>
       </Box>
     );
   }
@@ -102,7 +133,15 @@ const FrogGallery = () => {
           </Typography>
         </Box>
       )}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '8px', 
+          justifyContent: 'center',
+          width: '100%'
+        }}
+      >
       {displayedFrogs.map((frogId) => {
         const status = imageStatus[frogId] || {};
         return (
@@ -124,15 +163,30 @@ const FrogGallery = () => {
             }}
           >
             {status.exists ? (
-              <img
-                src={status.url}
-                alt={`Quai Frog #${frogId}`}
-                style={{
+              <Box
+                sx={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'cover',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
-              />
+              >
+                <img
+                  src={status.url}
+                  alt={`Quai Frog #${frogId}`}
+                  loading="lazy"
+                  onError={(e) => {
+                    console.error(`Error loading image for frog #${frogId}:`, e);
+                    e.target.style.display = 'none';
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+              </Box>
             ) : (
               <Box
                 sx={{
@@ -149,14 +203,15 @@ const FrogGallery = () => {
                 <Typography variant="caption" sx={{ fontSize: '10px' }}>
                   #{frogId}
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '8px' }}>
-                  {status.url}
+                <Typography variant="caption" sx={{ fontSize: '8px', textAlign: 'center', px: 1 }}>
+                  Image loading failed
                 </Typography>
               </Box>
             )}
           </Box>
         );
       })}
+      </Box>
     </Box>
   );
 };
