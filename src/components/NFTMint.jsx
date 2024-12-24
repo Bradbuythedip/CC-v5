@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { quais } from 'quais';
 
-const NFT_CONTRACT_ADDRESS = "YOUR_DEPLOYED_CONTRACT_ADDRESS";
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
 const NFT_ABI = [
   "function mint() public payable",
   "function totalSupply() public view returns (uint256)",
