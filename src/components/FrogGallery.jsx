@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
+const getImageUrl = (frogId) => {
+  // Try to get image from public assets
+  try {
+    return new URL(`/assets/images/${frogId}.png`, window.location.origin).href;
+  } catch (error) {
+    console.error('Error creating image URL:', error);
+    return `/assets/images/${frogId}.png`;
+  }
+};
+
 // Function to check if image exists
-const checkImage = (url) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      console.log('Image loaded successfully:', url);
-      resolve(true);
-    };
-    img.onerror = (error) => {
-      console.error('Error loading image:', url, error);
-      resolve(false);
-    };
-    img.src = url;
-  });
+const checkImage = async (frogId) => {
+  try {
+    const response = await fetch(getImageUrl(frogId), { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error('Error checking image:', error);
+    return false;
+  }
 };
 
 // Generate an array of random numbers between 1 and 420
@@ -40,28 +45,18 @@ const FrogGallery = () => {
         const frogs = getRandomFrogs(24);
         setDisplayedFrogs(frogs);
         
-        // Check each image
         const status = {};
         for (const frogId of frogs) {
           try {
-            const assetPath = `/assets/images/${frogId}.png`;
-            // Try both absolute and relative paths
-            const absoluteUrl = assetPath;
-            const relativeUrl = assetPath.startsWith('/') ? assetPath.slice(1) : assetPath;
-            
-            console.log('Attempting to load image with paths:', { absoluteUrl, relativeUrl });
-            
-            // Try absolute path first, then fallback to relative
-            const exists = await checkImage(absoluteUrl) || await checkImage(relativeUrl);
-            
+            const exists = await checkImage(frogId);
             status[frogId] = {
-              url: exists ? absoluteUrl : relativeUrl,
+              url: getImageUrl(frogId),
               exists
             };
           } catch (imageError) {
             console.error(`Error loading image for frog #${frogId}:`, imageError);
             status[frogId] = {
-              url: `/assets/images/${frogId}.png`,
+              url: getImageUrl(frogId),
               exists: false,
               error: imageError.message
             };

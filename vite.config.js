@@ -5,7 +5,8 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: process.env.NODE_ENV === 'production' ? '/' : '/',
+  base: '/',
+  publicDir: 'public',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -36,8 +37,6 @@ export default defineConfig({
     target: 'esnext',
     minify: 'esbuild',
   },
-  publicDir: 'public',
-
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
