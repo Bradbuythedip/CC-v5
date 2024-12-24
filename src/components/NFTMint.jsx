@@ -9,7 +9,8 @@ import {
 } from '@mui/material';
 import { quais } from 'quais';
 
-const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS || null;
+const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 const NFT_ABI = [
   "function mint() public payable",
   "function totalSupply() public view returns (uint256)",
@@ -32,6 +33,11 @@ const NFTMint = () => {
 
   useEffect(() => {
     const loadContractData = async () => {
+      if (!MINTING_ENABLED) {
+        setError("Minting is not yet enabled");
+        return;
+      }
+
       try {
         if (typeof window.pelagus !== 'undefined') {
           const provider = new quais.providers.Web3Provider(window.pelagus);
@@ -80,6 +86,10 @@ const NFTMint = () => {
     try {
       setLoading(true);
       setError(null);
+
+      if (!MINTING_ENABLED) {
+        throw new Error("Minting is not yet enabled");
+      }
 
       if (typeof window.pelagus === 'undefined') {
         throw new Error("Please install Pelagus wallet");
