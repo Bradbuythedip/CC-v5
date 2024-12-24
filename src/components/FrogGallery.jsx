@@ -33,7 +33,8 @@ const FrogGallery = () => {
       // Check each image
       const status = {};
       for (const frogId of frogs) {
-        const url = `/assets/images/${frogId}.png`;
+        // Use import.meta.env.BASE_URL to ensure correct path resolution
+        const url = `${import.meta.env.BASE_URL}assets/images/${frogId}.png`;
         status[frogId] = {
           url,
           exists: await checkImage(url)

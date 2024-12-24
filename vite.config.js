@@ -5,6 +5,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: process.env.NODE_ENV === 'production' ? '/' : '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -36,16 +37,31 @@ export default defineConfig({
     minify: 'esbuild',
   },
   publicDir: 'public',
-  server: {
-    port: 5173,
-    host: true,
-  },
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', 'ethers'],
+  },
+  define: {
+    'process.env': {},
+  },
+  server: {
+    port: 5173,
+    host: true,
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    proxy: {
+      '/api/coingecko': {
+        target: 'https://api.coingecko.com/api/v3',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/coingecko/, ''),
+      },
+    },
   },
 })
