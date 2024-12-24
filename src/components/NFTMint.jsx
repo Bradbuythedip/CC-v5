@@ -9,20 +9,25 @@ import {
 } from '@mui/material';
 import { quais } from 'quais';
 
-const NFT_CONTRACT_ADDRESS = "YOUR_DEPLOYED_CONTRACT_ADDRESS";
+const NFT_CONTRACT_ADDRESS = "0x002Bd6201a1421e7c998566650d161a8f5047d7a";
 const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 const NFT_ABI = [
   "function mint() public payable",
   "function totalSupply() public view returns (uint256)",
-  "function maxSupply() public view returns (uint256)",
+  "function maxSupply() public pure returns (uint256)",
   "function hasFreeMint(address) public view returns (bool)",
+  "function hasUsedFreeMint(address) public view returns (bool)",
+  "function mintsPerWallet(address) public view returns (uint256)",
+  "function name() public view returns (string)",
+  "function symbol() public view returns (string)",
+  "function tokenURI(uint256) public view returns (string)"
 ];
 
 const NFTMint = () => {
   const [loading, setLoading] = useState(false);
   const [mintAmount, setMintAmount] = useState(1);
   const [totalSupply, setTotalSupply] = useState(0);
-  const [maxSupply, setMaxSupply] = useState(1000);
+  const [maxSupply, setMaxSupply] = useState(420);
   const [hasFreeMint, setHasFreeMint] = useState(true);
   const [error, setError] = useState(null);
 
@@ -47,11 +52,11 @@ const NFTMint = () => {
           const total = await contract.totalSupply();
           const max = await contract.maxSupply();
           const account = await signer.getAddress();
-          const freeRemaining = await contract.hasFreeMint(account);
+          const hasUsedFree = await contract.hasUsedFreeMint(account);
 
           setTotalSupply(total.toNumber());
           setMaxSupply(max.toNumber());
-          setHasFreeMint(!freeRemaining);
+          setHasFreeMint(!hasUsedFree);
         }
       } catch (err) {
         console.error("Error loading contract data:", err);
@@ -100,7 +105,7 @@ const NFTMint = () => {
       const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const mintTx = await contract.mint({
-        value: hasFreeMint ? quais.utils.parseEther("5") : 0
+        value: hasFreeMint ? 0 : quais.utils.parseEther("1")
       });
 
       await mintTx.wait();
@@ -110,8 +115,8 @@ const NFTMint = () => {
       setTotalSupply(total.toNumber());
       
       const account = await signer.getAddress();
-      const freeRemaining = await contract.hasFreeMint(account);
-      setHasFreeMint(!freeRemaining);
+      const hasUsedFree = await contract.hasUsedFreeMint(account);
+      setHasFreeMint(!hasUsedFree);
       
     } catch (err) {
       console.error("Error minting NFT:", err);
