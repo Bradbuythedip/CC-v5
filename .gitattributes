@@ -1,0 +1,7 @@
+public/assets/**/*.png filter=lfs diff=lfs merge=lfs -text
+public/assets/**/*.json filter=lfs diff=lfs merge=lfs -text
+node_modules/@nomicfoundation/edr-*/**.node filter=lfs diff=lfs merge=lfs -text
+node_modules/@esbuild/*/bin/esbuild filter=lfs diff=lfs merge=lfs -text
+node_modules/esbuild/bin/esbuild filter=lfs diff=lfs merge=lfs -text
+node_modules/typescript/lib/*.js filter=lfs diff=lfs merge=lfs -text
+node_modules/solc/*.js filter=lfs diff=lfs merge=lfs -text
