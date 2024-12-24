@@ -23,8 +23,9 @@ const checkImage = async (frogId) => {
 };
 
 // Generate an array of random numbers between 1 and 420
-const GRID_SIZE = 3; // 3x3 grid
-const TOTAL_FROGS = GRID_SIZE * GRID_SIZE; // 9 total frogs
+const FROGS_PER_ROW = 6;
+const NUM_ROWS = 2;
+const TOTAL_FROGS = FROGS_PER_ROW * NUM_ROWS; // 12 total frogs
 
 const getRandomFrogs = () => {
   const frogs = new Set();
@@ -79,8 +80,18 @@ const FrogGallery = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box 
+        display="flex" 
+        flexDirection="column"
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="200px"
+        gap={2}
+      >
         <CircularProgress sx={{ color: '#00ff9d' }} />
+        <Typography variant="body2" sx={{ color: '#00ff9d' }}>
+          Loading Frogs...
+        </Typography>
       </Box>
     );
   }
@@ -134,15 +145,22 @@ const FrogGallery = () => {
       <Box 
         sx={{ 
           display: 'grid',
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-          gap: '24px',
+          gridTemplateColumns: `repeat(${FROGS_PER_ROW}, 1fr)`,
+          gridTemplateRows: `repeat(${NUM_ROWS}, 1fr)`,
+          gap: '16px',
           width: '100%',
-          maxWidth: '900px', // Adjusted for larger images
+          maxWidth: '1200px',
           margin: '0 auto',
-          padding: '24px',
+          padding: '16px',
+          '@media (max-width: 900px)': {
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: 'repeat(4, 1fr)',
+          },
           '@media (max-width: 600px)': {
-            gap: '16px',
-            padding: '16px',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gridTemplateRows: 'repeat(6, 1fr)',
+            gap: '12px',
+            padding: '12px',
           }
         }}
       >
@@ -155,17 +173,18 @@ const FrogGallery = () => {
               aspectRatio: '1',
               width: '100%',
               overflow: 'hidden',
-              borderRadius: '16px',
-              border: '2px solid rgba(0, 255, 157, 0.2)',
-              transition: 'all 0.3s ease-in-out',
+              borderRadius: '12px',
+              border: '1px solid rgba(0, 255, 157, 0.2)',
+              transition: 'all 0.2s ease-in-out',
               position: 'relative',
-              backgroundColor: 'rgba(26, 71, 42, 0.2)',
+              backgroundColor: 'rgba(26, 71, 42, 0.1)',
               cursor: 'pointer',
+              height: { xs: '120px', sm: '150px', md: '180px' },
               '&:hover': {
-                transform: 'scale(1.03)',
-                border: '2px solid rgba(0, 255, 157, 0.6)',
-                boxShadow: '0 0 30px rgba(0, 255, 157, 0.3)',
-                backgroundColor: 'rgba(26, 71, 42, 0.4)',
+                transform: 'scale(1.02)',
+                border: '1px solid rgba(0, 255, 157, 0.4)',
+                boxShadow: '0 0 20px rgba(0, 255, 157, 0.2)',
+                backgroundColor: 'rgba(26, 71, 42, 0.2)',
               },
             }}
           >
@@ -189,10 +208,9 @@ const FrogGallery = () => {
                   style={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'contain',
+                    objectFit: 'cover',
                     display: 'block',
-                    padding: '12px',
-                    backgroundColor: 'rgba(26, 71, 42, 0.4)',
+                    backgroundColor: 'rgba(26, 71, 42, 0.1)',
                   }}
                 />
               </Box>
@@ -210,26 +228,13 @@ const FrogGallery = () => {
                   padding: '16px',
                 }}
               >
-                <Typography 
-                  variant="h6" 
+                <CircularProgress 
+                  size={20}
                   sx={{ 
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold',
-                    marginBottom: '8px'
-                  }}
-                >
-                  #{frogId}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontSize: '0.9rem',
-                    textAlign: 'center',
+                    color: '#00ff9d',
                     opacity: 0.8
-                  }}
-                >
-                  Loading...
-                </Typography>
+                  }} 
+                />
               </Box>
             )}
           </Box>
