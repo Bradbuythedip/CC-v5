@@ -1,5 +1,5 @@
 {
-  "buildCommand": "git lfs install && git lfs pull && chmod +x build.sh && ./build.sh",
+  "buildCommand": "npm run build",
   "installCommand": "npm install",
   "outputDirectory": "dist",
   "framework": "vite",

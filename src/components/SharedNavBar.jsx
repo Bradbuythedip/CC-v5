@@ -37,7 +37,10 @@ const SharedNavBar = () => {
         WebkitBackdropFilter: 'blur(8px)',
         borderBottom: '1px solid rgba(0, 255, 157, 0.1)',
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        position: 'relative',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
       }}
     >
       <Toolbar 

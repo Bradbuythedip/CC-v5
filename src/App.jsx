@@ -20,7 +20,8 @@ function App() {
             minHeight: '100vh',
             backgroundColor: 'background.default',
             position: 'relative',
-            padding: '20px'
+            padding: '20px',
+            marginTop: '64px'
           }}
         >
           <SharedNavBar />
