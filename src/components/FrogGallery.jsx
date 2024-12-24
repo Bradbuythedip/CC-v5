@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 
-// Import all images
-const IMAGES = {};
-for (let i = 1; i <= 420; i++) {
-  IMAGES[i] = `/assets/images/${i}.png`;
-}
+// Function to check if image exists
+const checkImage = (url) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+};
 
 // Generate an array of random numbers between 1 and 420
 const getRandomFrogs = (count) => {
@@ -19,10 +23,27 @@ const getRandomFrogs = (count) => {
 const FrogGallery = () => {
   const [displayedFrogs, setDisplayedFrogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [imageStatus, setImageStatus] = useState({});
 
   useEffect(() => {
-    setDisplayedFrogs(getRandomFrogs(24));
-    setLoading(false);
+    const loadImages = async () => {
+      const frogs = getRandomFrogs(24);
+      setDisplayedFrogs(frogs);
+      
+      // Check each image
+      const status = {};
+      for (const frogId of frogs) {
+        const url = `/assets/images/${frogId}.png`;
+        status[frogId] = {
+          url,
+          exists: await checkImage(url)
+        };
+      }
+      setImageStatus(status);
+      setLoading(false);
+    };
+
+    loadImages();
   }, []);
 
   if (loading) {
@@ -49,7 +70,7 @@ const FrogGallery = () => {
       }}
     >
       {displayedFrogs.map((frogId) => {
-        const imageUrl = IMAGES[frogId];
+        const status = imageStatus[frogId] || {};
         return (
           <Box
             key={frogId}
@@ -68,19 +89,37 @@ const FrogGallery = () => {
               },
             }}
           >
-            <img
-              src={imageUrl}
-              alt={`Quai Frog #${frogId}`}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-              onError={(e) => {
-                console.error(`Failed to load image ${frogId}:`, e);
-                e.target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20width%3D%22100%22%20height%3D%22100%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%231a472a%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2250%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20alignment-baseline%3D%22middle%22%20fill%3D%22%2300ff9d%22%3E%23${frogId}%3C%2Ftext%3E%3C%2Fsvg%3E';
-              }}
-            />
+            {status.exists ? (
+              <img
+                src={status.url}
+                alt={`Quai Frog #${frogId}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#1a472a',
+                  color: '#00ff9d',
+                }}
+              >
+                <Typography variant="caption" sx={{ fontSize: '10px' }}>
+                  #{frogId}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '8px' }}>
+                  {status.url}
+                </Typography>
+              </Box>
+            )}
           </Box>
         );
       })}
