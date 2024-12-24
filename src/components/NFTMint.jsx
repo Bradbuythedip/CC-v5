@@ -7,14 +7,14 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
-import { Contract, providers, utils } from 'quais';
+import { quais } from 'quais';
 
 // Helper function to get provider
 const getProvider = async () => {
   if (typeof window.pelagus !== 'undefined') {
     // Request account access
     await window.pelagus.send('eth_requestAccounts');
-    return new providers.Web3Provider(window.pelagus, "any");
+    return new quais.providers.Web3Provider(window.pelagus, "any");
   }
   throw new Error("Pelagus wallet not found");
 };
@@ -74,7 +74,7 @@ const NFTMint = () => {
       try {
         const provider = await getProvider();
         const signer = provider.getSigner();
-        const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+        const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
         const total = await contract.totalSupply();
         const max = await contract.maxSupply();
@@ -142,10 +142,10 @@ const NFTMint = () => {
 
       const provider = await getProvider();
       const signer = provider.getSigner();
-      const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const mintTx = await contract.mint({
-        value: hasFreeMint ? 0 : utils.parseEther("1")
+        value: hasFreeMint ? 0 : quais.utils.parseEther("1")
       });
 
       await mintTx.wait();
