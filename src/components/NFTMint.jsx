@@ -19,7 +19,7 @@ const getProvider = async () => {
   throw new Error("Pelagus wallet not found");
 };
 
-const NFT_CONTRACT_ADDRESS = "0x002Bd6201a1421e7c998566650d161a8f5047d7a";
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 const NFT_ABI = [
   "function mint() public payable",
