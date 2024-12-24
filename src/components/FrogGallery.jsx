@@ -23,9 +23,8 @@ const checkImage = async (frogId) => {
 };
 
 // Generate an array of random numbers between 1 and 420
-const FROGS_PER_ROW = 6;
-const NUM_ROWS = 3;
-const TOTAL_FROGS = FROGS_PER_ROW * NUM_ROWS;
+const GRID_SIZE = 3; // 3x3 grid
+const TOTAL_FROGS = GRID_SIZE * GRID_SIZE; // 9 total frogs
 
 const getRandomFrogs = () => {
   const frogs = new Set();
@@ -135,12 +134,16 @@ const FrogGallery = () => {
       <Box 
         sx={{ 
           display: 'grid',
-          gridTemplateColumns: `repeat(${FROGS_PER_ROW}, 1fr)`,
-          gap: '16px',
+          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+          gap: '24px',
           width: '100%',
-          maxWidth: '1000px',
+          maxWidth: '900px', // Adjusted for larger images
           margin: '0 auto',
-          padding: '0 16px'
+          padding: '24px',
+          '@media (max-width: 600px)': {
+            gap: '16px',
+            padding: '16px',
+          }
         }}
       >
       {displayedFrogs.map((frogId) => {
@@ -152,14 +155,17 @@ const FrogGallery = () => {
               aspectRatio: '1',
               width: '100%',
               overflow: 'hidden',
-              borderRadius: '12px',
-              border: '1px solid rgba(0, 255, 157, 0.2)',
+              borderRadius: '16px',
+              border: '2px solid rgba(0, 255, 157, 0.2)',
               transition: 'all 0.3s ease-in-out',
               position: 'relative',
+              backgroundColor: 'rgba(26, 71, 42, 0.2)',
+              cursor: 'pointer',
               '&:hover': {
-                transform: 'scale(1.05)',
-                border: '1px solid rgba(0, 255, 157, 0.5)',
-                boxShadow: '0 0 20px rgba(0, 255, 157, 0.2)',
+                transform: 'scale(1.03)',
+                border: '2px solid rgba(0, 255, 157, 0.6)',
+                boxShadow: '0 0 30px rgba(0, 255, 157, 0.3)',
+                backgroundColor: 'rgba(26, 71, 42, 0.4)',
               },
             }}
           >
@@ -183,8 +189,10 @@ const FrogGallery = () => {
                   style={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'cover',
+                    objectFit: 'contain',
                     display: 'block',
+                    padding: '12px',
+                    backgroundColor: 'rgba(26, 71, 42, 0.4)',
                   }}
                 />
               </Box>
@@ -199,13 +207,28 @@ const FrogGallery = () => {
                   justifyContent: 'center',
                   backgroundColor: '#1a472a',
                   color: '#00ff9d',
+                  padding: '16px',
                 }}
               >
-                <Typography variant="caption" sx={{ fontSize: '10px' }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontSize: '1.2rem',
+                    fontWeight: 'bold',
+                    marginBottom: '8px'
+                  }}
+                >
                   #{frogId}
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '8px', textAlign: 'center', px: 1 }}>
-                  Image loading failed
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontSize: '0.9rem',
+                    textAlign: 'center',
+                    opacity: 0.8
+                  }}
+                >
+                  Loading...
                 </Typography>
               </Box>
             )}
