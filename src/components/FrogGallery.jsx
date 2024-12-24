@@ -43,9 +43,7 @@ const FrogGallery = () => {
       }}
     >
       {displayedFrogs.map((frogId) => {
-        // Construct the image URL relative to the public directory
-        const imageUrl = new URL(`/assets/images/${frogId}.png`, import.meta.url).href;
-        
+        const imageUrl = `/assets/images/${frogId}.png`;
         return (
           <Box
             key={frogId}

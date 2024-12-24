@@ -6,24 +6,12 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   build: {
+    outDir: 'dist',
     assetsDir: 'assets',
-    rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-      },
-      output: {
-        assetFileNames: (assetInfo) => {
-          let extType = assetInfo.name.split('.').at(1);
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
-            extType = 'images';
-          }
-          return `assets/${extType}/[name][extname]`;
-        },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
-      },
-    },
+    // Copy the images directory directly to dist
+    copyPublicDir: true,
   },
+  publicDir: 'public',
   server: {
     port: 5173,
     host: true,
