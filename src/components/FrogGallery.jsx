@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 
+// Import all images
+const IMAGES = {};
+for (let i = 1; i <= 420; i++) {
+  IMAGES[i] = `/assets/images/${i}.png`;
+}
+
 // Generate an array of random numbers between 1 and 420
 const getRandomFrogs = (count) => {
   const frogs = new Set();
@@ -43,7 +49,7 @@ const FrogGallery = () => {
       }}
     >
       {displayedFrogs.map((frogId) => {
-        const imageUrl = `/assets/images/${frogId}.png`;
+        const imageUrl = IMAGES[frogId];
         return (
           <Box
             key={frogId}

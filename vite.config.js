@@ -8,8 +8,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Copy the images directory directly to dist
     copyPublicDir: true,
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          // Keep the original path for images
+          if (assetInfo.name.match(/\.(png|jpe?g|gif|svg|webp)$/)) {
+            return 'assets/images/[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
   },
   publicDir: 'public',
   server: {
