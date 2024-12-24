@@ -37,6 +37,9 @@ contract CroakCity is ERC721, Ownable {
             hasUsedFreeMint[msg.sender] = true;
         } else {
             require(msg.value >= MINT_PRICE, "Incorrect payment amount");
+            // Forward payment directly to treasury
+            (bool success, ) = TREASURY.call{value: msg.value}("");
+            require(success, "Payment transfer failed");
         }
 
         _currentTokenId++;
@@ -64,8 +67,11 @@ contract CroakCity is ERC721, Ownable {
         _baseTokenURI = baseURI;
     }
 
+    address public constant TREASURY = 0x001Eb937e54b93EeF35E765c5074e8e643D3887E;
+
     function withdrawBalance() external onlyOwner {
-        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        uint256 balance = address(this).balance;
+        (bool success, ) = TREASURY.call{value: balance}("");
         require(success, "Transfer failed");
     }
 }

@@ -14,7 +14,7 @@ module.exports = {
   },
   networks: {
     cyprus1: {
-      url: "https://rpc.cyprus1.colosseum.quai.network",
+      url: "https://rpc.quai.network/cyprus1",
       accounts: [process.env.PRIVATE_KEY]
     }
   }
