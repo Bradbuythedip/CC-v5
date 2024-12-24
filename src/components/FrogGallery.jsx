@@ -23,16 +23,50 @@ const checkImage = async (frogId) => {
 };
 
 // Generate an array of random numbers between 1 and 420
-const FROGS_PER_ROW = 6;
-const NUM_ROWS = 2;
-const TOTAL_FROGS = FROGS_PER_ROW * NUM_ROWS; // 12 total frogs
+// Fixed constants for grid layout
+const FROGS_PER_ROW = Number(6);
+const NUM_ROWS = Number(2);
+const TOTAL_FROGS = Number(FROGS_PER_ROW * NUM_ROWS); // Should be 12
+console.log('Initializing FrogGallery with:', {
+  FROGS_PER_ROW,
+  NUM_ROWS,
+  TOTAL_FROGS
+});
 
 const getRandomFrogs = () => {
+  console.log('Generating random frogs...');
+  console.log('TOTAL_FROGS:', TOTAL_FROGS);
+  console.log('FROGS_PER_ROW:', FROGS_PER_ROW);
+  console.log('NUM_ROWS:', NUM_ROWS);
+  
   const frogs = new Set();
-  while (frogs.size < TOTAL_FROGS) {
+  let attempts = 0;
+  const maxAttempts = TOTAL_FROGS * 3; // Prevent infinite loops
+  
+  while (frogs.size < TOTAL_FROGS && attempts < maxAttempts) {
     frogs.add(Math.floor(Math.random() * 420) + 1);
+    attempts++;
   }
-  return Array.from(frogs);
+  
+  let result = Array.from(frogs);
+  
+  // Ensure we have exactly TOTAL_FROGS
+  while (result.length < TOTAL_FROGS) {
+    const newFrog = Math.floor(Math.random() * 420) + 1;
+    if (!result.includes(newFrog)) {
+      result.push(newFrog);
+    }
+  }
+  
+  // If we somehow got more, trim the excess
+  if (result.length > TOTAL_FROGS) {
+    result = result.slice(0, TOTAL_FROGS);
+  }
+  
+  console.log('Final frog IDs:', result);
+  console.log('Final count:', result.length);
+  
+  return result;
 };
 
 const FrogGallery = () => {
@@ -47,6 +81,8 @@ const FrogGallery = () => {
         setLoading(true);
         setError(null);
         const frogs = getRandomFrogs();
+        console.log('Generated frogs:', frogs);
+        console.log('Total frogs:', frogs.length);
         setDisplayedFrogs(frogs);
         
         const status = {};
@@ -139,6 +175,13 @@ const FrogGallery = () => {
         <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 1 }}>
           <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
             {JSON.stringify(debugInfo, null, 2)}
+          </Typography>
+        </Box>
+      )}
+      {process.env.NODE_ENV === 'development' && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 1 }}>
+          <Typography variant="caption" sx={{ color: '#00ff9d' }}>
+            Displaying {displayedFrogs.length} frogs
           </Typography>
         </Box>
       )}
