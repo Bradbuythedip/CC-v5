@@ -10,16 +10,30 @@ export default defineConfig({
     assetsDir: 'assets',
     copyPublicDir: true,
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep the original path for images
-          if (assetInfo.name.match(/\.(png|jpe?g|gif|svg|webp)$/)) {
-            return 'assets/images/[name][extname]';
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          
+          // Preserve the original path for images in the assets/images directory
+          if (assetInfo.name.includes('assets/images/')) {
+            return assetInfo.name;
           }
-          return 'assets/[name]-[hash][extname]';
+          
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/images/[name][extname]`;
+          }
+          return `assets/[ext]/[name]-[hash][extname]`;
         },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
       },
     },
+    target: 'esnext',
+    minify: 'esbuild',
   },
   publicDir: 'public',
   server: {
@@ -30,5 +44,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
   },
 })
