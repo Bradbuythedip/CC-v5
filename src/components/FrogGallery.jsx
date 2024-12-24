@@ -23,9 +23,13 @@ const checkImage = async (frogId) => {
 };
 
 // Generate an array of random numbers between 1 and 420
-const getRandomFrogs = (count) => {
+const FROGS_PER_ROW = 6;
+const NUM_ROWS = 3;
+const TOTAL_FROGS = FROGS_PER_ROW * NUM_ROWS;
+
+const getRandomFrogs = () => {
   const frogs = new Set();
-  while (frogs.size < count) {
+  while (frogs.size < TOTAL_FROGS) {
     frogs.add(Math.floor(Math.random() * 420) + 1);
   }
   return Array.from(frogs);
@@ -42,7 +46,7 @@ const FrogGallery = () => {
       try {
         setLoading(true);
         setError(null);
-        const frogs = getRandomFrogs(24);
+        const frogs = getRandomFrogs();
         setDisplayedFrogs(frogs);
         
         const status = {};
@@ -130,11 +134,13 @@ const FrogGallery = () => {
       )}
       <Box 
         sx={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: '8px', 
-          justifyContent: 'center',
-          width: '100%'
+          display: 'grid',
+          gridTemplateColumns: `repeat(${FROGS_PER_ROW}, 1fr)`,
+          gap: '16px',
+          width: '100%',
+          maxWidth: '1000px',
+          margin: '0 auto',
+          padding: '0 16px'
         }}
       >
       {displayedFrogs.map((frogId) => {
@@ -143,8 +149,8 @@ const FrogGallery = () => {
           <Box
             key={frogId}
             sx={{
-              width: '100px',
-              height: '100px',
+              aspectRatio: '1',
+              width: '100%',
               overflow: 'hidden',
               borderRadius: '12px',
               border: '1px solid rgba(0, 255, 157, 0.2)',
