@@ -5,8 +5,14 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 const checkImage = (url) => {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
+    img.onload = () => {
+      console.log('Image loaded successfully:', url);
+      resolve(true);
+    };
+    img.onerror = (error) => {
+      console.error('Error loading image:', url, error);
+      resolve(false);
+    };
     img.src = url;
   });
 };
@@ -33,11 +39,19 @@ const FrogGallery = () => {
       // Check each image
       const status = {};
       for (const frogId of frogs) {
-        // Use import.meta.env.BASE_URL to ensure correct path resolution
-        const url = `${import.meta.env.BASE_URL}assets/images/${frogId}.png`;
+        const assetPath = `/assets/images/${frogId}.png`;
+        // Try both absolute and relative paths
+        const absoluteUrl = assetPath;
+        const relativeUrl = assetPath.startsWith('/') ? assetPath.slice(1) : assetPath;
+        
+        console.log('Attempting to load image with paths:', { absoluteUrl, relativeUrl });
+        
+        // Try absolute path first, then fallback to relative
+        const exists = await checkImage(absoluteUrl) || await checkImage(relativeUrl);
+        
         status[frogId] = {
-          url,
-          exists: await checkImage(url)
+          url: exists ? absoluteUrl : relativeUrl,
+          exists
         };
       }
       setImageStatus(status);
@@ -55,11 +69,21 @@ const FrogGallery = () => {
     );
   }
 
+  // For debugging purposes
+  const debugInfo = {
+    baseUrl: import.meta.env.BASE_URL,
+    mode: import.meta.env.MODE,
+    dev: import.meta.env.DEV,
+    sampleImageUrl: `/assets/images/1.png`
+  };
+
+  console.log('Environment Debug Info:', debugInfo);
+
   return (
     <Box 
       sx={{ 
         display: 'flex',
-        flexWrap: 'wrap',
+        flexDirection: 'column',
         gap: '8px',
         maxWidth: '1200px',
         margin: '0 auto',
@@ -70,6 +94,15 @@ const FrogGallery = () => {
         mt: 0,
       }}
     >
+      {/* Debug information display */}
+      {import.meta.env.DEV && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 1 }}>
+          <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
+            {JSON.stringify(debugInfo, null, 2)}
+          </Typography>
+        </Box>
+      )}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}
       {displayedFrogs.map((frogId) => {
         const status = imageStatus[frogId] || {};
         return (

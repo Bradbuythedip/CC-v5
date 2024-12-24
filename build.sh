@@ -15,7 +15,18 @@ mkdir -p dist/assets/images
 
 # Copy all images from public to dist
 echo "Copying images..."
-cp -rv public/assets/images/* dist/assets/images/
+if [ -d "public/assets/images" ]; then
+    cp -rv public/assets/images/* dist/assets/images/ || {
+        echo "Error copying images"
+        exit 1
+    }
+    # Ensure correct permissions
+    chmod -R 644 dist/assets/images/*
+    find dist/assets/images -type d -exec chmod 755 {} \;
+else
+    echo "Error: public/assets/images directory not found"
+    exit 1
+fi
 
 # Verify the copy
 echo "Verifying image copy..."
