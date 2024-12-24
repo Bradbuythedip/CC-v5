@@ -9,6 +9,16 @@ import {
 } from '@mui/material';
 import { Contract, providers, utils } from 'quais';
 
+// Helper function to get provider
+const getProvider = async () => {
+  if (typeof window.pelagus !== 'undefined') {
+    // Request account access
+    await window.pelagus.send('eth_requestAccounts');
+    return new providers.Web3Provider(window.pelagus, "any");
+  }
+  throw new Error("Pelagus wallet not found");
+};
+
 const NFT_CONTRACT_ADDRESS = "0x002Bd6201a1421e7c998566650d161a8f5047d7a";
 const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 const NFT_ABI = [
@@ -30,6 +40,8 @@ const NFTMint = () => {
   const [maxSupply, setMaxSupply] = useState(420);
   const [hasFreeMint, setHasFreeMint] = useState(true);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [account, setAccount] = useState(null);
 
   const handleMintChange = (event, newValue) => {
     setMintAmount(newValue);
@@ -37,6 +49,22 @@ const NFTMint = () => {
 
 
   useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        if (typeof window.pelagus !== 'undefined') {
+          const accounts = await window.pelagus.send('eth_accounts');
+          const isConnected = accounts.length > 0;
+          setIsConnected(isConnected);
+          if (isConnected) {
+            setAccount(accounts[0]);
+            await loadContractData();
+          }
+        }
+      } catch (err) {
+        console.error("Error checking connection:", err);
+      }
+    };
+
     const loadContractData = async () => {
       if (!MINTING_ENABLED) {
         setError("Minting is not yet enabled");
@@ -44,27 +72,39 @@ const NFTMint = () => {
       }
 
       try {
-        if (typeof window.pelagus !== 'undefined') {
-          const provider = new providers.Web3Provider(window.pelagus, "any");
-          const signer = provider.getSigner();
-          const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+        const provider = await getProvider();
+        const signer = provider.getSigner();
+        const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
-          const total = await contract.totalSupply();
-          const max = await contract.maxSupply();
-          const account = await signer.getAddress();
-          const hasUsedFree = await contract.hasUsedFreeMint(account);
+        const total = await contract.totalSupply();
+        const max = await contract.maxSupply();
+        const currentAccount = await signer.getAddress();
+        const hasUsedFree = await contract.hasUsedFreeMint(currentAccount);
 
-          setTotalSupply(total.toNumber());
-          setMaxSupply(max.toNumber());
-          setHasFreeMint(!hasUsedFree);
-        }
+        setTotalSupply(total.toNumber());
+        setMaxSupply(max.toNumber());
+        setHasFreeMint(!hasUsedFree);
       } catch (err) {
         console.error("Error loading contract data:", err);
         setError(`Error loading contract data: ${err.message}`);
       }
     };
 
-    loadContractData();
+    checkConnection();
+
+    // Listen for account changes
+    if (window.pelagus) {
+      window.pelagus.on('accountsChanged', (accounts) => {
+        if (accounts.length > 0) {
+          setIsConnected(true);
+          setAccount(accounts[0]);
+          loadContractData();
+        } else {
+          setIsConnected(false);
+          setAccount(null);
+        }
+      });
+    }
   }, []);
 
   const connectWallet = async () => {
@@ -100,7 +140,7 @@ const NFTMint = () => {
         throw new Error("Please install Pelagus wallet");
       }
 
-      const provider = new providers.Web3Provider(window.pelagus, "any");
+      const provider = await getProvider();
       const signer = provider.getSigner();
       const contract = new Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
@@ -206,10 +246,12 @@ const NFTMint = () => {
         >
           {loading ? (
             <CircularProgress size={24} sx={{ color: '#0a1f13' }} />
-          ) : typeof window.pelagus === 'undefined' ? (
+          ) : !window.pelagus ? (
             'Install Pelagus Wallet'
+          ) : !isConnected ? (
+            'Connect Wallet'
           ) : (
-            'Mint Now'
+            <>Mint Now {account ? `(${account.slice(0, 6)}...${account.slice(-4)})` : ''}</>
           )}
         </Button>
       </Stack>
