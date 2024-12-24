@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 
 // Generate an array of random numbers between 1 and 420
 const getRandomFrogs = (count) => {
@@ -11,7 +11,21 @@ const getRandomFrogs = (count) => {
 };
 
 const FrogGallery = () => {
-  const displayedFrogs = getRandomFrogs(24); // Show 24 random frogs
+  const [displayedFrogs, setDisplayedFrogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setDisplayedFrogs(getRandomFrogs(24));
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress sx={{ color: '#00ff9d' }} />
+      </Box>
+    );
+  }
 
   return (
     <Box 
@@ -28,34 +42,44 @@ const FrogGallery = () => {
         mt: 0,
       }}
     >
-      {displayedFrogs.map((frogId) => (
-        <Box
-          key={frogId}
-          sx={{
-            width: '100px',
-            height: '100px',
-            overflow: 'hidden',
-            borderRadius: '12px',
-            border: '1px solid rgba(0, 255, 157, 0.2)',
-            transition: 'all 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'scale(1.05)',
-              border: '1px solid rgba(0, 255, 157, 0.5)',
-              boxShadow: '0 0 20px rgba(0, 255, 157, 0.2)',
-            },
-          }}
-        >
-          <img
-            src={`/assets/images/${frogId}.png`}
-            alt={`Quai Frog #${frogId}`}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
+      {displayedFrogs.map((frogId) => {
+        // Construct the image URL relative to the public directory
+        const imageUrl = new URL(`/assets/images/${frogId}.png`, import.meta.url).href;
+        
+        return (
+          <Box
+            key={frogId}
+            sx={{
+              width: '100px',
+              height: '100px',
+              overflow: 'hidden',
+              borderRadius: '12px',
+              border: '1px solid rgba(0, 255, 157, 0.2)',
+              transition: 'all 0.3s ease-in-out',
+              position: 'relative',
+              '&:hover': {
+                transform: 'scale(1.05)',
+                border: '1px solid rgba(0, 255, 157, 0.5)',
+                boxShadow: '0 0 20px rgba(0, 255, 157, 0.2)',
+              },
             }}
-          />
-        </Box>
-      ))}
+          >
+            <img
+              src={imageUrl}
+              alt={`Quai Frog #${frogId}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+              onError={(e) => {
+                console.error(`Failed to load image ${frogId}:`, e);
+                e.target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20width%3D%22100%22%20height%3D%22100%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%231a472a%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2250%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20alignment-baseline%3D%22middle%22%20fill%3D%22%2300ff9d%22%3E%23${frogId}%3C%2Ftext%3E%3C%2Fsvg%3E';
+              }}
+            />
+          </Box>
+        );
+      })}
     </Box>
   );
 };
