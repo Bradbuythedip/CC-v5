@@ -44,7 +44,7 @@ const requestAccounts = async () => {
   }
 };
 
-const NFT_CONTRACT_ADDRESS = "0x0062481f93e27cdb73ce0fa173c3251dffe40127";
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
 const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 
 const NFTMint = () => {
