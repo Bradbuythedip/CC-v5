@@ -86,6 +86,22 @@ const NFTMint = () => {
     setMintAmount(newValue);
   };
 
+  // Contract helper functions
+  const readContract = async (functionSelector, params = []) => {
+    let data = functionSelector;
+    if (params.length > 0) {
+      data += params.map(p => p.replace('0x', '').padStart(64, '0')).join('');
+    }
+    const result = await window.pelagus.request({
+      method: 'eth_call',
+      params: [{
+        to: NFT_CONTRACT_ADDRESS,
+        data
+      }, 'latest']
+    });
+    return result;
+  };
+
   const loadContractData = async () => {
     if (!MINTING_ENABLED) {
       setError("Minting is not yet enabled");
@@ -102,49 +118,26 @@ const NFTMint = () => {
 
       const currentAccount = accounts[0];
 
-      // Create a contract instance
-      const contract = {
-        async totalSupply() {
-          const result = await provider.request({
-            method: 'eth_call',
-            params: [{
-              to: NFT_CONTRACT_ADDRESS,
-              data: '0x18160ddd' // totalSupply()
-            }, 'latest']
-          });
-          return parseInt(result, 16);
-        },
-        async maxSupply() {
-          const result = await provider.request({
-            method: 'eth_call',
-            params: [{
-              to: NFT_CONTRACT_ADDRESS,
-              data: '0xd5abeb01' // maxSupply()
-            }, 'latest']
-          });
-          return parseInt(result, 16);
-        },
-        async hasUsedFreeMint(address) {
-          const data = '0x' + 'c5c83840' + // hasUsedFreeMint(address)
-                      address.slice(2).padStart(64, '0');
-          const result = await provider.request({
-            method: 'eth_call',
-            params: [{
-              to: NFT_CONTRACT_ADDRESS,
-              data: data
-            }, 'latest']
-          });
-          return result !== '0x0000000000000000000000000000000000000000000000000000000000000000';
-        }
-      };
+      try {
+        // Get total supply
+        const totalSupplyResult = await readContract('0x18160ddd');
+        const total = parseInt(totalSupplyResult, 16);
 
-      const total = await contract.totalSupply();
-      const max = await contract.maxSupply();
-      const hasUsedFree = await contract.hasUsedFreeMint(currentAccount);
+        // Get max supply
+        const maxSupplyResult = await readContract('0xd5abeb01');
+        const max = parseInt(maxSupplyResult, 16);
 
-      setTotalSupply(total);
-      setMaxSupply(max);
-      setHasFreeMint(!hasUsedFree);
+        // Check if user has used free mint
+        const hasUsedFreeResult = await readContract('0xc5c83840', [currentAccount]);
+        const hasUsedFree = hasUsedFreeResult !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+        setTotalSupply(total);
+        setMaxSupply(max);
+        setHasFreeMint(!hasUsedFree);
+      } catch (err) {
+        console.error('Error reading contract:', err);
+        throw new Error('Failed to read contract data');
+      }
     } catch (err) {
       console.error("Error loading contract data:", err);
       setError(`Error loading contract data: ${err.message}`);
@@ -265,44 +258,59 @@ const NFTMint = () => {
         throw new Error("Minting is not yet enabled");
       }
 
-      if (typeof window.pelagus === 'undefined') {
+      if (!window.pelagus) {
         throw new Error("Please install Pelagus wallet");
       }
 
-      const provider = await getProvider();
-      const accounts = await provider.request({ method: 'eth_accounts' });
+      // Get current account
+      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+      if (!accounts || accounts.length === 0) {
+        throw new Error("Please connect your wallet first");
+      }
       const currentAccount = accounts[0];
 
-      // Create the mint transaction
-      const mintTx = {
-        from: currentAccount,
-        to: NFT_CONTRACT_ADDRESS,
-        value: hasFreeMint ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
-        data: '0x1249c58b' // mint()
-      };
-
-      // Send the transaction
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [mintTx]
-      });
-
-      // Wait for transaction confirmation
-      let confirmed = false;
-      while (!confirmed) {
-        const receipt = await provider.request({
-          method: 'eth_getTransactionReceipt',
-          params: [txHash]
+      try {
+        // Send transaction
+        const txHash = await window.pelagus.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: currentAccount,
+            to: NFT_CONTRACT_ADDRESS,
+            value: hasFreeMint ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+            data: '0x1249c58b' // mint()
+          }]
         });
-        if (receipt) {
-          confirmed = true;
-        } else {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
 
-      // Refresh data
-      await loadContractData();
+        console.log('Transaction sent:', txHash);
+
+        // Wait for confirmation
+        let confirmed = false;
+        while (!confirmed) {
+          try {
+            const receipt = await window.pelagus.request({
+              method: 'eth_getTransactionReceipt',
+              params: [txHash]
+            });
+            if (receipt) {
+              confirmed = true;
+              console.log('Transaction confirmed:', receipt);
+            } else {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (err) {
+            console.log('Waiting for confirmation...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+
+        // Refresh data
+        await loadContractData();
+      } catch (err) {
+        if (err.code === 4001) {
+          throw new Error("Transaction was rejected. Please approve the transaction in Pelagus");
+        }
+        throw err;
+      }
     } catch (err) {
       console.error("Error minting NFT:", err);
       setError(err.message || "Error minting NFT");
@@ -375,7 +383,7 @@ const NFTMint = () => {
 
         <Button
           variant="contained"
-          onClick={typeof window.pelagus === 'undefined' ? connectWallet : mintNFT}
+          onClick={!isConnected ? connectWallet : mintNFT}
           disabled={loading}
           sx={{
             background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
