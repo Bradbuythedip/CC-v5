@@ -7,25 +7,46 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
-// No need to import quais, it's available on window.quais when Pelagus is installed
+
+// Helper function to wait for Pelagus and quais to be initialized
+const waitForPelagus = async () => {
+  let attempts = 0;
+  const maxAttempts = 30; // Maximum attempts (30 * 100ms = 3 seconds total)
+  
+  while (attempts < maxAttempts) {
+    if (window.pelagus && window.pelagus.quais) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  return false;
+};
 
 // Helper function to get provider
 const getProvider = async () => {
-  if (typeof window !== 'undefined' && window.pelagus) {
-    try {
-      // Request account access if needed
-      await window.pelagus.request({ method: 'eth_requestAccounts' });
-      
-      // Create Web3Provider and Signer
-      const provider = new window.quais.providers.Web3Provider(window.pelagus);
-      await provider.ready; // Wait for provider to be ready
-      return provider;
-    } catch (error) {
-      console.error('Error initializing provider:', error);
-      throw new Error('Failed to initialize Pelagus provider');
+  try {
+    if (typeof window === 'undefined') {
+      throw new Error("Browser environment not detected");
     }
+
+    // Wait for Pelagus to initialize
+    const isPelagusReady = await waitForPelagus();
+    if (!isPelagusReady) {
+      throw new Error("Pelagus wallet not initialized after waiting");
+    }
+
+    // Request account access
+    await window.pelagus.request({ method: 'eth_requestAccounts' });
+    
+    // Use Pelagus's quais instance
+    const provider = new window.pelagus.quais.providers.Web3Provider(window.pelagus);
+    await provider.ready; // Wait for provider to be ready
+    return provider;
+  } catch (error) {
+    console.error('Error initializing provider:', error);
+    throw new Error('Failed to initialize Pelagus provider: ' + error.message);
   }
-  throw new Error("Please install Pelagus wallet");
 };
 
 const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
@@ -56,7 +77,6 @@ const NFTMint = () => {
     setMintAmount(newValue);
   };
 
-
   const loadContractData = async () => {
     if (!MINTING_ENABLED) {
       setError("Minting is not yet enabled");
@@ -66,7 +86,7 @@ const NFTMint = () => {
     try {
       const provider = await getProvider();
       const signer = provider.getSigner();
-      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new window.pelagus.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const total = await contract.totalSupply();
       const max = await contract.maxSupply();
@@ -162,10 +182,10 @@ const NFTMint = () => {
 
       const provider = await getProvider();
       const signer = provider.getSigner();
-      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new window.pelagus.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const mintTx = await contract.mint({
-        value: hasFreeMint ? 0 : window.quais.utils.parseEther("1")
+        value: hasFreeMint ? 0 : window.pelagus.quais.utils.parseEther("1")
       });
 
       await mintTx.wait();
