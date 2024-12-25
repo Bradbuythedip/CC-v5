@@ -87,19 +87,41 @@ const NFTMint = () => {
   };
 
   // Contract helper functions
-  const readContract = async (functionSelector, params = []) => {
-    let data = functionSelector;
-    if (params.length > 0) {
-      data += params.map(p => p.replace('0x', '').padStart(64, '0')).join('');
-    }
-    const result = await window.pelagus.request({
-      method: 'eth_call',
-      params: [{
+  const readContract = async (functionSelector, params = [], from = null) => {
+    try {
+      console.log(`Calling contract with selector: ${functionSelector}`);
+      let data = functionSelector;
+      if (params.length > 0) {
+        const encodedParams = params.map(p => {
+          // Remove 0x if present and pad
+          const cleaned = p.replace('0x', '').toLowerCase();
+          return cleaned.padStart(64, '0');
+        }).join('');
+        console.log('Encoded params:', encodedParams);
+        data += encodedParams;
+      }
+      console.log('Full call data:', data);
+
+      const callParams = {
         to: NFT_CONTRACT_ADDRESS,
-        data
-      }, 'latest']
-    });
-    return result;
+        data,
+      };
+
+      if (from) {
+        callParams.from = from;
+      }
+
+      console.log('Making eth_call with params:', callParams);
+      const result = await window.pelagus.request({
+        method: 'eth_call',
+        params: [callParams, 'latest']
+      });
+      console.log(`Contract call result: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('Contract call error:', error);
+      throw error;
+    }
   };
 
   const loadContractData = async () => {
@@ -119,18 +141,31 @@ const NFTMint = () => {
       const currentAccount = accounts[0];
 
       try {
+        console.log('Loading contract data for account:', currentAccount);
+
         // Get total supply
-        const totalSupplyResult = await readContract('0x18160ddd');
-        const total = parseInt(totalSupplyResult, 16);
+        const totalSupplyResult = await readContract('0x18160ddd', [], currentAccount);
+        console.log('Total supply raw result:', totalSupplyResult);
+        const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
+        console.log('Parsed total supply:', total);
 
         // Get max supply
-        const maxSupplyResult = await readContract('0xd5abeb01');
-        const max = parseInt(maxSupplyResult, 16);
+        const maxSupplyResult = await readContract('0xd5abeb01', [], currentAccount);
+        console.log('Max supply raw result:', maxSupplyResult);
+        const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
+        console.log('Parsed max supply:', max);
 
         // Check if user has used free mint
-        const hasUsedFreeResult = await readContract('0xc5c83840', [currentAccount]);
-        const hasUsedFree = hasUsedFreeResult !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+        // First, pad the address to 32 bytes (remove 0x and pad to 64 characters)
+        const paddedAddress = currentAccount.slice(2).padStart(64, '0');
+        console.log('Padded address for hasUsedFreeMint:', paddedAddress);
+        
+        const hasUsedFreeResult = await readContract('0xc5c83840', [currentAccount], currentAccount);
+        console.log('Has used free mint raw result:', hasUsedFreeResult);
+        const hasUsedFree = hasUsedFreeResult && hasUsedFreeResult !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+        console.log('Parsed has used free mint:', hasUsedFree);
 
+        console.log('Setting state with:', { total, max, hasFreeMint: !hasUsedFree });
         setTotalSupply(total);
         setMaxSupply(max);
         setHasFreeMint(!hasUsedFree);
@@ -140,7 +175,14 @@ const NFTMint = () => {
       }
     } catch (err) {
       console.error("Error loading contract data:", err);
-      setError(`Error loading contract data: ${err.message}`);
+      // Don't show the error to the user if we're just not connected yet
+      if (err.message !== "Failed to read contract data") {
+        setError(`Error loading contract data: ${err.message}`);
+      }
+      // Reset states on error
+      setTotalSupply(0);
+      setMaxSupply(420);
+      setHasFreeMint(true);
     }
   };
 
@@ -270,16 +312,21 @@ const NFTMint = () => {
       const currentAccount = accounts[0];
 
       try {
+        console.log('Preparing mint transaction...');
+        const mintParams = {
+          from: currentAccount,
+          to: NFT_CONTRACT_ADDRESS,
+          value: hasFreeMint ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+          data: '0x1249c58b' // mint()
+        };
+        console.log('Mint transaction params:', mintParams);
+
         // Send transaction
         const txHash = await window.pelagus.request({
           method: 'eth_sendTransaction',
-          params: [{
-            from: currentAccount,
-            to: NFT_CONTRACT_ADDRESS,
-            value: hasFreeMint ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
-            data: '0x1249c58b' // mint()
-          }]
+          params: [mintParams]
         });
+        console.log('Transaction hash:', txHash);
 
         console.log('Transaction sent:', txHash);
 
