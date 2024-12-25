@@ -60,8 +60,8 @@ const NFTMint = () => {
   // Setup provider and contract configuration
   const CHAIN_CONFIG = {
     name: 'Cyprus 1',
-    chainId: 9000,
-    url: 'https://rpc.quai.network'
+    chainId: Number(import.meta.env.VITE_QUAI_CHAIN_ID || 9000),
+    url: import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network'
   };
 
   // Contract ABI for read functions
