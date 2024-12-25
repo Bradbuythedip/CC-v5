@@ -153,11 +153,20 @@ const NFTMint = () => {
         throw new Error("Please install Pelagus wallet");
       }
 
+      // Check network first
+      await checkChain();
+
+      // Request accounts after confirming network
       const accounts = await requestAccounts();
       
       if (accounts?.length) {
         const currentAccount = accounts[0];
         console.log('Connected to account:', currentAccount);
+
+        // Verify address format matches Cyprus-1
+        if (!currentAccount.toLowerCase().startsWith('0x00')) {
+          throw new Error("Please use a Cyprus-1 address (starting with 0x00)");
+        }
 
         setIsConnected(true);
         setAccount(currentAccount);
@@ -273,17 +282,31 @@ const NFTMint = () => {
     }
   };
 
-  // Check if we're on the correct chain
+  // Check if we're connected to Cyprus-1
   const checkChain = async () => {
     try {
-      const chainId = await window.pelagus.request({
-        method: 'quai_chainId'
+      // First check if Pelagus is available
+      if (!window.pelagus) {
+        throw new Error("Please install Pelagus wallet");
+      }
+
+      // Get current chain
+      const chainData = await window.pelagus.request({
+        method: 'quai_getZone'
       });
-      const expectedChainId = '0x2328'; // 9000 in hex
-      return chainId === expectedChainId;
+
+      console.log('Current chain data:', chainData);
+
+      // Check if we're on Cyprus-1
+      const isCyprus1 = chainData && chainData.toLowerCase().includes('cyprus1');
+      if (!isCyprus1) {
+        throw new Error("Please connect to Cyprus-1 network in Pelagus");
+      }
+
+      return true;
     } catch (error) {
-      console.error('Failed to get chain ID:', error);
-      return false;
+      console.error('Chain check failed:', error);
+      throw error;
     }
   };
 
@@ -329,20 +352,29 @@ const NFTMint = () => {
         }
       });
 
-      window.pelagus.on('chainChanged', async (chainId) => {
-        const isCorrectChain = chainId === '0x2328'; // 9000 in hex
-        if (!isCorrectChain) {
-          setError("Please connect to Quai Network Cyprus1");
-          setIsConnected(false);
-          setAccount(null);
-        } else {
+      window.pelagus.on('zoneChanged', async () => {
+        try {
+          // Check if we're still on Cyprus-1
+          await checkChain();
           setError(null);
+          
+          // Refresh connection if on correct network
           const accounts = await getConnectedAccounts();
           if (accounts?.length) {
-            setIsConnected(true);
-            setAccount(accounts[0]);
-            await loadContractData();
+            const currentAccount = accounts[0];
+            if (currentAccount.toLowerCase().startsWith('0x00')) {
+              setIsConnected(true);
+              setAccount(currentAccount);
+              await loadContractData();
+            } else {
+              throw new Error("Please use a Cyprus-1 address (starting with 0x00)");
+            }
           }
+        } catch (err) {
+          console.error("Network change error:", err);
+          setError(err.message || "Please connect to Cyprus-1 network");
+          setIsConnected(false);
+          setAccount(null);
         }
       });
 
