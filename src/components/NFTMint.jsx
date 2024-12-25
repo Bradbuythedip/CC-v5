@@ -6,60 +6,33 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
-import { quais } from 'quais';
 
-// Helper function to get connected accounts with zone information
+// Helper function to get connected accounts
 const getConnectedAccounts = async () => {
   try {
     const accounts = await window.pelagus.request({ method: 'quai_accounts' });
-    
-    if (!accounts || accounts.length === 0) {
-      return [];
-    }
-
-    // Get zone information for each account
-    const accountsWithZones = accounts.map(address => {
-      const zone = quais.getZoneFromAddress(address);
-      return {
-        address,
-        zone,
-        shard: zone // For compatibility
-      };
-    });
-
-    console.log('Current connected accounts:', accountsWithZones);
-    return accountsWithZones;
-    
+    console.log('Connected accounts:', accounts);
+    return accounts;
   } catch (error) {
     console.error('Failed to get accounts:', error);
     return [];
   }
 };
 
-// Helper function to request accounts with zone detection
+// Helper function to request accounts
 const requestAccounts = async () => {
   try {
     const accounts = await window.pelagus.request({ 
       method: 'quai_requestAccounts' 
     });
 
+    console.log('Account request result:', accounts);
+    
     if (!accounts || accounts.length === 0) {
       throw new Error('No accounts returned');
     }
 
-    // Get zone information for each account
-    const accountsWithZones = accounts.map(address => {
-      const zone = quais.getZoneFromAddress(address);
-      return {
-        address,
-        zone,
-        shard: zone // For compatibility
-      };
-    });
-
-    console.log('Connected accounts:', accountsWithZones);
-    return accountsWithZones;
-
+    return accounts;
   } catch (error) {
     console.error('Account request error:', error);
     if (error.code === 4001) {
@@ -166,15 +139,6 @@ const NFTMint = () => {
       if (accounts?.length) {
         const currentAccount = accounts[0];
         console.log('Connected to account:', currentAccount);
-        
-        // Get the contract's zone
-        const contractZone = quais.getZoneFromAddress(NFT_CONTRACT_ADDRESS);
-        console.log('Contract zone:', contractZone);
-        
-        // Check if account is in the same zone as the contract
-        if (currentAccount.zone !== contractZone) {
-          throw new Error(`Please switch to an account in the ${contractZone} zone to interact with this contract`);
-        }
 
         setIsConnected(true);
         setAccount(currentAccount);
@@ -205,14 +169,8 @@ const NFTMint = () => {
       const currentAccount = accounts[0];
       console.log('Minting with account:', currentAccount);
 
-      // Verify zone compatibility
-      const contractZone = quais.getZoneFromAddress(NFT_CONTRACT_ADDRESS);
-      if (currentAccount.zone !== contractZone) {
-        throw new Error(`Please switch to an account in the ${contractZone} zone to mint`);
-      }
-
       // Check current mints
-      const mintsResult = await readContract('0x8b7ada50', [currentAccount.address]);
+      const mintsResult = await readContract('0x8b7ada50', [currentAccount]);
       if (!mintsResult) {
         throw new Error("Unable to verify mint eligibility");
       }
@@ -227,9 +185,8 @@ const NFTMint = () => {
       const mintValue = shouldBeFree ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
 
       console.log('Preparing mint transaction:', {
-        from: currentAccount.address,
+        from: currentAccount,
         to: NFT_CONTRACT_ADDRESS,
-        zone: currentAccount.zone,
         shouldBeFree,
         mintValue
       });
@@ -238,7 +195,7 @@ const NFTMint = () => {
       const txHash = await window.pelagus.request({
         method: 'quai_sendTransaction',
         params: [{
-          from: currentAccount.address,
+          from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
           value: mintValue,
           data: '0x1249c58b' // mint()
@@ -286,30 +243,13 @@ const NFTMint = () => {
     if (window.pelagus) {
       window.pelagus.on('accountsChanged', async (accounts) => {
         if (accounts?.length) {
-          // Get account with zone info
-          const accountsWithZones = accounts.map(address => ({
-            address,
-            zone: quais.getZoneFromAddress(address),
-            shard: quais.getZoneFromAddress(address)
-          }));
-
-          const currentAccount = accountsWithZones[0];
+          const currentAccount = accounts[0];
           console.log('Account changed to:', currentAccount);
-
-          // Get contract's zone
-          const contractZone = quais.getZoneFromAddress(NFT_CONTRACT_ADDRESS);
           
-          // Update connection state
           setIsConnected(true);
           setAccount(currentAccount);
-          
-          // Warn if wrong zone
-          if (currentAccount.zone !== contractZone) {
-            setError(`Please switch to an account in the ${contractZone} zone to interact with this contract`);
-          } else {
-            setError(null);
-            await loadContractData();
-          }
+          setError(null);
+          await loadContractData();
         } else {
           setIsConnected(false);
           setAccount(null);
