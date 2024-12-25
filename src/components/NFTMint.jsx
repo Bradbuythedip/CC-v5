@@ -726,7 +726,6 @@ const NFTMint = () => {
             </Stack>
           </Box>
         )}
-        </Typography>
 
         <Box sx={{ width: '100%', px: 2 }}>
           <Typography 
