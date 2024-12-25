@@ -208,21 +208,43 @@ const NFTMint = () => {
       setHasFreeMint(prev => prev === undefined ? true : prev);
     }
   };
-    const checkConnection = async () => {
-      try {
-        if (typeof window === 'undefined' || !window.pelagus) {
-          return;
-        }
 
-        // Just check eth_accounts without prompting
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-        const isConnected = accounts.length > 0;
+  useEffect(() => {
+    const checkConnection = async () => {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        console.log('Not in browser environment');
+        return;
+      }
+
+      // Check if Pelagus is available
+      if (!window.pelagus) {
+        console.log('Pelagus not available');
+        setIsConnected(false);
+        setAccount(null);
+        return;
+      }
+
+      try {
+        // Check accounts without prompting
+        const accounts = await window.pelagus.request({ 
+          method: 'eth_accounts'
+        }).catch(err => {
+          console.log('eth_accounts request failed:', err);
+          return [];
+        });
+
+        const isConnected = Array.isArray(accounts) && accounts.length > 0;
+        console.log('Connection status:', { isConnected, accounts });
+
         setIsConnected(isConnected);
         
-        if (isConnected) {
+        if (isConnected && accounts[0]) {
           setAccount(accounts[0]);
           // Only load contract data if we have an account
-          await loadContractData();
+          await loadContractData().catch(err => {
+            console.error('Failed to load initial contract data:', err);
+          });
         } else {
           setAccount(null);
         }
@@ -236,44 +258,48 @@ const NFTMint = () => {
 
     checkConnection();
 
-    // Store event handlers so we can remove them later
-    const handleAccountsChanged = (accounts) => {
-      if (accounts.length > 0) {
-        setIsConnected(true);
-        setAccount(accounts[0]);
-        loadContractData();
-      } else {
+    // Add event listeners and return cleanup function
+    if (window.pelagus) {
+      // Setup account change handling
+      const onAccountsChanged = (accounts) => {
+        if (accounts.length > 0) {
+          setIsConnected(true);
+          setAccount(accounts[0]);
+          loadContractData();
+        } else {
+          setIsConnected(false);
+          setAccount(null);
+          setError(null);
+        }
+      };
+
+      // Setup chain change handling
+      const onChainChanged = () => {
+        window.location.reload();
+      };
+
+      // Setup disconnect handling
+      const onDisconnect = () => {
         setIsConnected(false);
         setAccount(null);
         setError(null);
-      }
-    };
+      };
 
-    const handleChainChanged = () => {
-      window.location.reload();
-    };
+      // Add listeners
+      window.pelagus.on('accountsChanged', onAccountsChanged);
+      window.pelagus.on('chainChanged', onChainChanged);
+      window.pelagus.on('disconnect', onDisconnect);
 
-    const handleDisconnect = () => {
-      setIsConnected(false);
-      setAccount(null);
-      setError(null);
-    };
-
-    // Add event listeners
-    if (window.pelagus) {
-      window.pelagus.on('accountsChanged', handleAccountsChanged);
-      window.pelagus.on('chainChanged', handleChainChanged);
-      window.pelagus.on('disconnect', handleDisconnect);
+      // Return cleanup function
+      return function cleanup() {
+        window.pelagus.removeListener('accountsChanged', onAccountsChanged);
+        window.pelagus.removeListener('chainChanged', onChainChanged);
+        window.pelagus.removeListener('disconnect', onDisconnect);
+      };
     }
 
-    // Cleanup listeners
-    return () => {
-      if (window.pelagus) {
-        window.pelagus.removeListener('accountsChanged', handleAccountsChanged);
-        window.pelagus.removeListener('chainChanged', handleChainChanged);
-        window.pelagus.removeListener('disconnect', handleDisconnect);
-      }
-    };
+    // Return empty cleanup if no pelagus
+    return () => {};
   }, []);
 
   const connectWallet = async () => {
