@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { quais } from 'quais';
+import { toQuaiChecksumAddress, formatAddress, ensureZonePrefix } from '../utils/addressHelpers';
 
 const PELAGUS_DOWNLOAD_URL = 'https://chrome.google.com/webstore/detail/pelagus/gaegollnpijhedifeeeepdoffkgfcmbc';
 
