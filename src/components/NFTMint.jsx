@@ -425,54 +425,48 @@ const NFTMint = () => {
 
       console.log('Transaction hash:', txHash);
 
-        // Wait for confirmation with timeout
-        console.log('Waiting for transaction confirmation...');
-        let confirmed = false;
-        let attempts = 0;
-        const maxAttempts = 30; // 30 seconds timeout
+      // Wait for confirmation with timeout
+      console.log('Waiting for transaction confirmation...');
+      let confirmed = false;
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds timeout
 
-        while (!confirmed && attempts < maxAttempts) {
-          try {
-            const receipt = await window.pelagus.request({
-              method: 'eth_getTransactionReceipt',
-              params: [txHash]
-            });
+      while (!confirmed && attempts < maxAttempts) {
+        try {
+          const receipt = await window.pelagus.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash]
+          });
 
-            if (receipt) {
-              // Check if transaction was successful
-              if (receipt.status === '0x1') {
-                confirmed = true;
-                console.log('Transaction confirmed successfully:', receipt);
-              } else {
-                throw new Error('Transaction failed on the blockchain');
-              }
+          if (receipt) {
+            // Check if transaction was successful
+            if (receipt.status === '0x1') {
+              confirmed = true;
+              console.log('Transaction confirmed successfully:', receipt);
             } else {
-              console.log(`Waiting for confirmation... (${attempts + 1}/${maxAttempts})`);
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              attempts++;
+              throw new Error('Transaction failed on the blockchain');
             }
-          } catch (err) {
-            if (err.message === 'Transaction failed on the blockchain') {
-              throw err;
-            }
-            console.log('Error checking receipt, retrying...');
+          } else {
+            console.log(`Waiting for confirmation... (${attempts + 1}/${maxAttempts})`);
             await new Promise(resolve => setTimeout(resolve, 1000));
             attempts++;
           }
+        } catch (err) {
+          if (err.message === 'Transaction failed on the blockchain') {
+            throw err;
+          }
+          console.log('Error checking receipt, retrying...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
         }
-
-        if (!confirmed) {
-          throw new Error('Transaction confirmation timed out. Please check your wallet for status.');
-        }
-
-        // Refresh data
-        await loadContractData();
-      } catch (err) {
-        if (err.code === 4001) {
-          throw new Error("Transaction was rejected. Please approve the transaction in Pelagus");
-        }
-        throw err;
       }
+
+      if (!confirmed) {
+        throw new Error('Transaction confirmation timed out. Please check your wallet for status.');
+      }
+
+      // Refresh data
+      await loadContractData();
     } catch (err) {
       console.error("Error minting NFT:", err);
       setError(err.message || "Error minting NFT");
