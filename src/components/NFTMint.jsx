@@ -87,7 +87,7 @@ const NFTMint = () => {
   };
 
   // Contract helper functions
-  const readContract = async (functionSelector, params = [], from = null) => {
+  const readContract = async (functionSelector, params = []) => {
     try {
       console.log(`Calling contract with selector: ${functionSelector}`);
       let data = functionSelector;
@@ -102,25 +102,24 @@ const NFTMint = () => {
       }
       console.log('Full call data:', data);
 
-      const callParams = {
-        to: NFT_CONTRACT_ADDRESS,
-        data,
-      };
-
-      if (from) {
-        callParams.from = from;
-      }
-
-      console.log('Making eth_call with params:', callParams);
+      // Use eth_call without requiring signing
       const result = await window.pelagus.request({
         method: 'eth_call',
-        params: [callParams, 'latest']
+        params: [{
+          to: NFT_CONTRACT_ADDRESS,
+          data,
+        }, 'latest']
       });
       console.log(`Contract call result: ${result}`);
       return result;
     } catch (error) {
       console.error('Contract call error:', error);
-      throw error;
+      // If it's not a user rejection, propagate the error
+      if (!error.code || error.code !== 4001) {
+        throw error;
+      }
+      // Return null for user rejections to handle them gracefully
+      return null;
     }
   };
 
@@ -141,48 +140,59 @@ const NFTMint = () => {
       const currentAccount = accounts[0];
 
       try {
-        console.log('Loading contract data for account:', currentAccount);
+        // Try to read all contract data without requiring signing
+        console.log('Loading contract data...');
 
         // Get total supply
-        const totalSupplyResult = await readContract('0x18160ddd', [], currentAccount);
+        const totalSupplyResult = await readContract('0x18160ddd');
         console.log('Total supply raw result:', totalSupplyResult);
         const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
         console.log('Parsed total supply:', total);
 
-        // Get max supply
-        const maxSupplyResult = await readContract('0xd5abeb01', [], currentAccount);
+        // Get max supply (static value)
+        const maxSupplyResult = await readContract('0xd5abeb01');
         console.log('Max supply raw result:', maxSupplyResult);
         const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
         console.log('Parsed max supply:', max);
 
         // Check if user has used free mint
-        // First, pad the address to 32 bytes (remove 0x and pad to 64 characters)
-        const paddedAddress = currentAccount.slice(2).padStart(64, '0');
-        console.log('Padded address for hasUsedFreeMint:', paddedAddress);
-        
-        const hasUsedFreeResult = await readContract('0xc5c83840', [currentAccount], currentAccount);
+        const hasUsedFreeResult = await readContract('0xc5c83840', [currentAccount]);
         console.log('Has used free mint raw result:', hasUsedFreeResult);
-        const hasUsedFree = hasUsedFreeResult && hasUsedFreeResult !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+        // If we got a null result (user rejected), assume they haven't used their free mint
+        const hasUsedFree = hasUsedFreeResult ? 
+          hasUsedFreeResult !== '0x0000000000000000000000000000000000000000000000000000000000000000' :
+          false;
         console.log('Parsed has used free mint:', hasUsedFree);
 
-        console.log('Setting state with:', { total, max, hasFreeMint: !hasUsedFree });
-        setTotalSupply(total);
-        setMaxSupply(max);
-        setHasFreeMint(!hasUsedFree);
+        // Only update state if we have valid results
+        if (totalSupplyResult !== null && maxSupplyResult !== null) {
+          console.log('Setting state with:', { total, max, hasFreeMint: !hasUsedFree });
+          setTotalSupply(total);
+          setMaxSupply(max);
+          setHasFreeMint(!hasUsedFree);
+        } else {
+          console.log('Skipping state update due to rejected calls');
+        }
       } catch (err) {
         console.error('Error reading contract:', err);
         throw new Error('Failed to read contract data');
       }
     } catch (err) {
       console.error("Error loading contract data:", err);
-      // Don't show the error to the user if we're just not connected yet
-      if (err.message !== "Failed to read contract data") {
+      // Check for common errors that we don't want to show to the user
+      const silentErrors = [
+        "Failed to read contract data",
+        "User rejected the request"
+      ];
+      
+      if (!silentErrors.includes(err.message) && (!err.code || err.code !== 4001)) {
         setError(`Error loading contract data: ${err.message}`);
       }
-      // Reset states on error
-      setTotalSupply(0);
-      setMaxSupply(420);
-      setHasFreeMint(true);
+
+      // Keep current values if we have them, otherwise use defaults
+      setTotalSupply(prev => prev || 0);
+      setMaxSupply(prev => prev || 420);
+      setHasFreeMint(prev => prev === undefined ? true : prev);
     }
   };
 
