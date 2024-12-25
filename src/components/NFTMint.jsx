@@ -34,21 +34,42 @@ const waitForPelagus = async () => {
 
 // Helper function to wait for Pelagus initialization in Firefox
 const waitForFirefoxPelagus = async () => {
-  const maxAttempts = 10;
+  const maxAttempts = 20; // Increased attempts for Firefox
   const interval = 500; // 500ms between attempts
   
+  console.log('Starting Firefox Pelagus initialization check...');
+  
   for (let i = 0; i < maxAttempts; i++) {
+    console.log(`Firefox Pelagus check attempt ${i + 1}/${maxAttempts}`);
+    
     if (window.pelagus) {
       try {
-        // Try to get chainId as a basic check
-        await window.pelagus.request({ method: 'eth_chainId' });
-        return true;
+        // More thorough check for Firefox
+        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        
+        console.log('Firefox Pelagus check results:', {
+          chainId,
+          accountsAvailable: Array.isArray(accounts) && accounts.length > 0,
+          pelagusMethods: Object.keys(window.pelagus).join(', ')
+        });
+        
+        // Make sure we have the basic requirements
+        if (chainId && typeof window.pelagus.request === 'function') {
+          console.log('Firefox Pelagus initialization successful');
+          return true;
+        }
       } catch (err) {
-        console.log('Waiting for Pelagus to be ready in Firefox...');
+        console.log('Firefox Pelagus not ready yet:', err.message);
       }
+    } else {
+      console.log('Firefox Pelagus object not found yet');
     }
+    
     await new Promise(resolve => setTimeout(resolve, interval));
   }
+  
+  console.log('Firefox Pelagus initialization timed out');
   return false;
 };
 
@@ -275,13 +296,30 @@ const NFTMint = () => {
         setIsConnected(false);
         setAccount(null);
         
-        // Check if Firefox and provide specific guidance
+        // Enhanced Firefox-specific checks and guidance
         if (/Firefox/.test(navigator.userAgent)) {
-          const firefoxVersion = parseInt(navigator.userAgent.split('Firefox/')[1]);
+          // Get Firefox version
+          const firefoxVersion = parseInt(navigator.userAgent.split('Firefox/')[1]) || 0;
+          console.log('Firefox version detected:', firefoxVersion);
+          
           if (firefoxVersion < 102) {
             setError('Please update Firefox to version 102 or later to use Pelagus');
             return;
           }
+          
+          // Check if Pelagus extension is installed but not initialized
+          const extensionPresent = document.documentElement.getAttribute('data-pelagus-extension') === 'true';
+          console.log('Pelagus extension present:', extensionPresent);
+          
+          if (extensionPresent) {
+            setError('Pelagus extension detected but not initialized. Please reload the page or check extension permissions.');
+          } else {
+            setError('Please install the Pelagus extension for Firefox and reload the page');
+            // Open Pelagus download page in new tab
+            window.open('https://pelagus.space/download', '_blank');
+          }
+        } else {
+          setError('Please install the Pelagus wallet extension');
         }
         return;
       }
@@ -421,6 +459,14 @@ const NFTMint = () => {
       setLoading(true);
       setError(null);
 
+      // Debug state at start of mint
+      console.log('Starting mint process with state:', {
+        MINTING_ENABLED,
+        NFT_CONTRACT_ADDRESS,
+        pelagusDefined: !!window.pelagus,
+        pelagusMethods: window.pelagus ? Object.keys(window.pelagus) : [],
+      });
+
       // Basic checks
       if (!MINTING_ENABLED) {
         throw new Error("Minting is not yet enabled");
@@ -429,6 +475,16 @@ const NFTMint = () => {
       if (!window.pelagus) {
         throw new Error("Please install Pelagus wallet");
       }
+
+      // Debug Pelagus state
+      const debugState = {
+        chainId: await window.pelagus.request({ method: 'eth_chainId' }).catch(e => e.message),
+        balance: await window.pelagus.request({ 
+          method: 'eth_getBalance',
+          params: [currentAccount, 'latest']
+        }).catch(e => e.message)
+      };
+      console.log('Pelagus debug state:', debugState);
 
       // Get current account
       const accounts = await window.pelagus.request({ 
@@ -467,21 +523,45 @@ const NFTMint = () => {
         const balanceInWei = BigInt(balance);
         console.log('Current balance (wei):', balanceInWei.toString());
 
-        // Get gas price first
+        // Get gas price with debug
+        console.log('Requesting gas price...');
         const gasPrice = await window.pelagus.request({
           method: 'eth_gasPrice',
           params: []
+        }).catch(e => {
+          console.error('Gas price request failed:', e);
+          throw e;
         });
-        console.log('Current gas price:', gasPrice);
+        console.log('Current gas price:', {
+          hex: gasPrice,
+          decimal: parseInt(gasPrice, 16),
+          gwei: parseInt(gasPrice, 16) / 1e9
+        });
 
-        // Create base parameters for estimation
+        // Create base parameters for estimation with debug
+        console.log('Creating transaction parameters. Free mint:', shouldBeFree);
+        const value = shouldBeFree ? '0x0' : '0xDE0B6B3A7640000';
+        console.log('Transaction value:', {
+          hex: value,
+          decimal: parseInt(value || '0', 16),
+          quai: parseInt(value || '0', 16) / 1e18
+        });
+
         const baseParams = {
           from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
           data: '0x1249c58b', // mint()
-          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
-          gasPrice: gasPrice // Include gas price for more accurate estimation
+          value,
+          gasPrice
         };
+        
+        console.log('Base transaction parameters:', {
+          ...baseParams,
+          fromAccount: currentAccount,
+          contractAddress: NFT_CONTRACT_ADDRESS,
+          valueInQuai: parseInt(value, 16) / 1e18,
+          gasPriceGwei: parseInt(gasPrice, 16) / 1e9
+        });
 
         // Log the transaction we're going to estimate
         console.log('Estimating gas for transaction:', {
