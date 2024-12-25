@@ -8,17 +8,26 @@ import {
   Stack,
 } from '@mui/material';
 
-// Helper function to wait for Pelagus and quais to be initialized
+// Helper function to wait for Pelagus to be fully initialized
 const waitForPelagus = async () => {
-  let attempts = 0;
-  const maxAttempts = 30; // Maximum attempts (30 * 100ms = 3 seconds total)
-  
-  while (attempts < maxAttempts) {
-    if (window.pelagus && window.pelagus.quais) {
-      return true;
+  const maxAttempts = 50; // 5 seconds total
+  const checkInterval = 100; // 100ms between checks
+
+  for (let attempts = 0; attempts < maxAttempts; attempts++) {
+    try {
+      // Check if Pelagus is available
+      if (window.pelagus) {
+        // Try to get the chain ID to verify the connection
+        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+        if (chainId) {
+          console.log('Pelagus initialized with chain ID:', chainId);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.log('Waiting for Pelagus to initialize...', attempts);
     }
-    await new Promise(resolve => setTimeout(resolve, 100));
-    attempts++;
+    await new Promise(resolve => setTimeout(resolve, checkInterval));
   }
   return false;
 };
@@ -36,12 +45,23 @@ const getProvider = async () => {
       throw new Error("Pelagus wallet not initialized after waiting");
     }
 
-    // Request account access
-    await window.pelagus.request({ method: 'eth_requestAccounts' });
-    
-    // Use Pelagus's quais instance
-    const provider = new window.pelagus.quais.providers.Web3Provider(window.pelagus);
-    await provider.ready; // Wait for provider to be ready
+    // Request account access if needed
+    const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+    if (!accounts || accounts.length === 0) {
+      await window.pelagus.request({ method: 'eth_requestAccounts' });
+    }
+
+    // Create provider
+    const provider = new window.pelagus.providers.Web3Provider(window.pelagus, {
+      name: 'Cyprus1',
+      chainId: 1337,
+      networkId: 1337,
+    });
+
+    // Ensure we're connected to the right network
+    const network = await provider.getNetwork();
+    console.log('Connected to network:', network);
+
     return provider;
   } catch (error) {
     console.error('Error initializing provider:', error);
@@ -86,7 +106,7 @@ const NFTMint = () => {
     try {
       const provider = await getProvider();
       const signer = provider.getSigner();
-      const contract = new window.pelagus.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new window.pelagus.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const total = await contract.totalSupply();
       const max = await contract.maxSupply();
@@ -182,10 +202,10 @@ const NFTMint = () => {
 
       const provider = await getProvider();
       const signer = provider.getSigner();
-      const contract = new window.pelagus.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new window.pelagus.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const mintTx = await contract.mint({
-        value: hasFreeMint ? 0 : window.pelagus.quais.utils.parseEther("1")
+        value: hasFreeMint ? 0 : window.pelagus.utils.parseEther("1")
       });
 
       await mintTx.wait();
