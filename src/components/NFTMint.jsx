@@ -32,66 +32,17 @@ const waitForPelagus = async () => {
   return false;
 };
 
-// Helper function to wait for Pelagus initialization in Firefox
-const waitForFirefoxPelagus = async () => {
-  const maxAttempts = 20; // Increased attempts for Firefox
-  const interval = 500; // 500ms between attempts
-  
-  console.log('Starting Firefox Pelagus initialization check...');
-  
-  for (let i = 0; i < maxAttempts; i++) {
-    console.log(`Firefox Pelagus check attempt ${i + 1}/${maxAttempts}`);
-    
-    if (window.pelagus) {
-      try {
-        // More thorough check for Firefox
-        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-        
-        console.log('Firefox Pelagus check results:', {
-          chainId,
-          accountsAvailable: Array.isArray(accounts) && accounts.length > 0,
-          pelagusMethods: Object.keys(window.pelagus).join(', ')
-        });
-        
-        // Make sure we have the basic requirements
-        if (chainId && typeof window.pelagus.request === 'function') {
-          console.log('Firefox Pelagus initialization successful');
-          return true;
-        }
-      } catch (err) {
-        console.log('Firefox Pelagus not ready yet:', err.message);
-      }
-    } else {
-      console.log('Firefox Pelagus object not found yet');
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, interval));
-  }
-  
-  console.log('Firefox Pelagus initialization timed out');
-  return false;
-};
-
-// Helper function to get provider
+// Helper function to get provider with proper initialization
 const getProvider = async () => {
   try {
     if (typeof window === 'undefined') {
       throw new Error("Browser environment not detected");
     }
 
-    // Special handling for Firefox
-    if (/Firefox/.test(navigator.userAgent)) {
-      const isPelagusReady = await waitForFirefoxPelagus();
-      if (!isPelagusReady) {
-        throw new Error("Please ensure Pelagus extension is properly installed and enabled in Firefox");
-      }
-    } else {
-      // For Chrome and others, use the original wait function
-      const isPelagusReady = await waitForPelagus();
-      if (!isPelagusReady) {
-        throw new Error("Pelagus wallet not initialized after waiting");
-      }
+    // Wait for Pelagus to be fully initialized
+    const isPelagusReady = await waitForPelagus();
+    if (!isPelagusReady) {
+      throw new Error("Pelagus wallet not initialized after waiting");
     }
 
     // Request account access if needed
@@ -135,40 +86,32 @@ const NFTMint = () => {
     setMintAmount(newValue);
   };
 
-  // Contract helper functions for view functions
+  // Contract helper functions for view functions with proper initialization
   const readContract = async (functionSelector, params = [], retry = true) => {
     try {
+      // Initialize provider first
+      await getProvider();
+      
       console.log(`Calling contract with selector: ${functionSelector}`);
-      let data = functionSelector;
-      if (params.length > 0) {
-        const encodedParams = params.map(p => {
-          // Remove 0x if present and pad
-          const cleaned = p.replace('0x', '').toLowerCase();
-          return cleaned.padStart(64, '0');
-        }).join('');
-        console.log('Encoded params:', encodedParams);
-        data += encodedParams;
-      }
+      const data = functionSelector + (params.length > 0 
+        ? params.map(p => p.replace('0x', '').toLowerCase().padStart(64, '0')).join('')
+        : '');
 
-      // Get the current account if available
-      let from;
-      try {
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-        if (accounts?.length > 0) {
-          from = accounts[0];
-        }
-      } catch (e) {
-        console.log('Failed to get current account:', e);
+      // Get the current account
+      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+      const from = accounts?.[0];
+
+      if (!from) {
+        console.log('No account available');
+        return null;
       }
 
       // Call params for view function
       const callParams = {
         to: NFT_CONTRACT_ADDRESS,
         data,
+        from
       };
-      if (from) {
-        callParams.from = from;
-      }
 
       // Try different RPC methods
       const methods = retry ? ['eth_call', 'quai_call'] : ['eth_call'];
@@ -188,23 +131,18 @@ const NFTMint = () => {
         } catch (err) {
           console.log(`${method} failed:`, err);
           lastError = err;
-          // If it's a user rejection and we're not retrying, break immediately
           if (err.code === 4001 && !retry) break;
-          // Otherwise continue to next method
         }
       }
 
-      // If we got here, all methods failed
       if (lastError?.code === 4001) {
-        console.log('All methods failed with user rejection');
-        // For view functions, continue with default values instead of throwing
+        console.log('User rejected the request');
         return null;
       }
 
-      throw lastError || new Error('All RPC methods failed');
+      throw lastError || new Error('Contract call failed');
     } catch (error) {
       console.error('Contract call error:', error);
-      // For view functions, we'll use default values instead of throwing
       return null;
     }
   };
@@ -216,43 +154,30 @@ const NFTMint = () => {
     }
 
     try {
-      // First check if we're already connected
+      // Initialize provider first
+      await getProvider();
+
       const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-      if (!accounts || accounts.length === 0) {
-        // Don't show an error, just return silently as we're not connected yet
-        return;
-      }
+      if (!accounts?.length) return;
 
       const currentAccount = accounts[0];
 
-      // Get all contract data in parallel
-      const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
-        readContract("0x18160ddd"),
-        readContract("0xd5abeb01"),
-        readContract("0x8b7ada50", [currentAccount])
-      ]);
+      // Get all contract data in sequence to avoid race conditions
+      const totalSupplyResult = await readContract("0x18160ddd");
+      const maxSupplyResult = await readContract("0xd5abeb01");
+      const mintsResult = await readContract("0x8b7ada50", [currentAccount]);
 
       // Parse results with default values
       const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
-      console.log("Total supply:", total);
-
       const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
-      console.log("Max supply:", max);
-
       const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-      console.log("Current mints for wallet:", mintsCount);
+
+      console.log("Contract data loaded:", { total, max, mintsCount });
 
       // Calculate states
       const hasUsedFree = mintsCount > 0;
       const canMint = mintsCount < 20;
       const shouldBeFree = !hasUsedFree;
-
-      console.log("Mint status:", {
-        hasUsedFree,
-        canMint,
-        shouldBeFree,
-        mintsCount
-      });
 
       // Update all states
       setTotalSupply(total);
@@ -261,190 +186,108 @@ const NFTMint = () => {
 
     } catch (err) {
       console.error("Error loading contract data:", err);
-      
-      // Check for common errors that we don't want to show to the user
-      const silentErrors = [
-        "Failed to read contract data",
-        "User rejected the request"
-      ];
-      
-      if (!silentErrors.includes(err.message) && (!err.code || err.code !== 4001)) {
+      if (!err.code || err.code !== 4001) {
         setError(`Error loading contract data: ${err.message}`);
       }
-
-      // Keep current values if we have them, otherwise use defaults
-      setTotalSupply(prev => prev || 0);
-      setMaxSupply(prev => prev || 420);
-      setHasFreeMint(prev => prev === undefined ? true : prev);
     }
   };
 
   useEffect(() => {
-    const checkConnection = async () => {
-      // Check if we're in a browser environment
-      if (typeof window === 'undefined') {
-        console.log('Not in browser environment');
-        return;
-      }
+    let mounted = true;
 
-      // Clear any previous errors when checking connection
-      setError(null);
-
-      // Check if Pelagus is available
-      if (!window.pelagus) {
-        console.log('Pelagus not available');
-        setIsConnected(false);
-        setAccount(null);
-        
-        // Enhanced Firefox-specific checks and guidance
-        if (/Firefox/.test(navigator.userAgent)) {
-          // Get Firefox version
-          const firefoxVersion = parseInt(navigator.userAgent.split('Firefox/')[1]) || 0;
-          console.log('Firefox version detected:', firefoxVersion);
-          
-          if (firefoxVersion < 102) {
-            setError('Please update Firefox to version 102 or later to use Pelagus');
-            return;
-          }
-          
-          // Check if Pelagus extension is installed but not initialized
-          const extensionPresent = document.documentElement.getAttribute('data-pelagus-extension') === 'true';
-          console.log('Pelagus extension present:', extensionPresent);
-          
-          if (extensionPresent) {
-            setError('Pelagus extension detected but not initialized. Please reload the page or check extension permissions.');
-          } else {
-            setError('Please install the Pelagus extension for Firefox and reload the page');
-            // Open Pelagus download page in new tab
-            window.open('https://pelagus.space/download', '_blank');
-          }
-        } else {
-          setError('Please install the Pelagus wallet extension');
-        }
-        return;
-      }
-
+    const init = async () => {
       try {
-        // Check accounts without prompting
-        const accounts = await window.pelagus.request({ 
-          method: 'eth_accounts'
-        }).catch(err => {
-          console.log('eth_accounts request failed:', err);
-          return [];
-        });
+        if (!window.pelagus) {
+          if (mounted) {
+            setIsConnected(false);
+            setAccount(null);
+            setError('Please install Pelagus wallet extension');
+          }
+          return;
+        }
 
-        const isConnected = Array.isArray(accounts) && accounts.length > 0;
-        console.log('Connection status:', { isConnected, accounts });
+        // Initialize provider
+        await getProvider();
 
-        setIsConnected(isConnected);
-        
-        if (isConnected && accounts[0]) {
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        if (mounted && accounts?.length) {
+          setIsConnected(true);
           setAccount(accounts[0]);
-          // Only load contract data if we have an account
-          await loadContractData().catch(err => {
-            console.error('Failed to load initial contract data:', err);
-          });
-        } else {
-          setAccount(null);
+          await loadContractData();
         }
       } catch (err) {
-        console.error("Error checking connection:", err);
-        // Don't show error to user, just log it
-        setIsConnected(false);
-        setAccount(null);
+        console.error('Initialization error:', err);
+        if (mounted) {
+          setError(err.message);
+          setIsConnected(false);
+          setAccount(null);
+        }
       }
     };
 
-    checkConnection();
+    init();
 
-    // Add event listeners and return cleanup function
     if (window.pelagus) {
-      // Setup account change handling
-      const onAccountsChanged = (accounts) => {
-        if (accounts.length > 0) {
+      const onAccountsChanged = async (accounts) => {
+        if (!mounted) return;
+        if (accounts?.length) {
           setIsConnected(true);
           setAccount(accounts[0]);
-          loadContractData();
+          await loadContractData();
         } else {
+          setIsConnected(false);
+          setAccount(null);
+        }
+      };
+
+      const onChainChanged = () => {
+        if (mounted) window.location.reload();
+      };
+
+      const onDisconnect = () => {
+        if (mounted) {
           setIsConnected(false);
           setAccount(null);
           setError(null);
         }
       };
 
-      // Setup chain change handling
-      const onChainChanged = () => {
-        window.location.reload();
-      };
-
-      // Setup disconnect handling
-      const onDisconnect = () => {
-        setIsConnected(false);
-        setAccount(null);
-        setError(null);
-      };
-
-      // Add listeners
       window.pelagus.on('accountsChanged', onAccountsChanged);
       window.pelagus.on('chainChanged', onChainChanged);
       window.pelagus.on('disconnect', onDisconnect);
 
-      // Return cleanup function
-      return function cleanup() {
+      return () => {
+        mounted = false;
         window.pelagus.removeListener('accountsChanged', onAccountsChanged);
         window.pelagus.removeListener('chainChanged', onChainChanged);
         window.pelagus.removeListener('disconnect', onDisconnect);
       };
     }
 
-    // Return empty cleanup if no pelagus
-    return () => {};
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const connectWallet = async () => {
     try {
-      // Check for supported browsers
-      const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-      const isFirefox = /Firefox/.test(navigator.userAgent);
-      
-      if (!isChrome && !isFirefox) {
-        setError("Please use Chrome or Firefox to connect Pelagus wallet");
-        return;
-      }
-      
-      if (typeof window === 'undefined' || !window.pelagus) {
-        window.open('https://pelagus.space/download', '_blank');
-        throw new Error("Please install Pelagus wallet");
+      // Initialize provider first
+      const provider = await getProvider();
+      if (!provider) {
+        throw new Error("Failed to initialize wallet connection");
       }
 
-      try {
-        // Check network and request account access
-        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
-        console.log('Connected to chain:', chainId);
-        
-        // Cyprus-1 chainId is 0x2330
-        if (chainId !== '0x2330') {
-          throw new Error('Please connect to Cyprus-1 network in Pelagus');
-        }
+      const chainId = await provider.request({ method: 'eth_chainId' });
+      if (chainId !== '0x2330') {
+        throw new Error('Please connect to Cyprus-1 network in Pelagus');
+      }
 
-        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
-        if (accounts.length > 0) {
-          setIsConnected(true);
-          setAccount(accounts[0]);
-          setError(null); // Clear any previous errors
-          // Load contract data after successful connection
-          await loadContractData();
-        }
-      } catch (err) {
-        console.error('Connection error:', err);
-        if (err.code === 4001) {
-          // User rejected the connection request
-          throw new Error("Please approve the connection request in Pelagus");
-        }
-        if (err.code === -32002) {
-          throw new Error("Connection request already pending. Please check Pelagus extension.");
-        }
-        throw err;
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      if (accounts?.length) {
+        setIsConnected(true);
+        setAccount(accounts[0]);
+        setError(null);
+        await loadContractData();
       }
     } catch (err) {
       console.error("Error connecting wallet:", err);
@@ -459,435 +302,147 @@ const NFTMint = () => {
       setLoading(true);
       setError(null);
 
-      // Debug state at start of mint
-      console.log('Starting mint process with state:', {
-        MINTING_ENABLED,
-        NFT_CONTRACT_ADDRESS,
-        pelagusDefined: !!window.pelagus,
-        pelagusMethods: window.pelagus ? Object.keys(window.pelagus) : [],
-      });
+      // Initialize provider first
+      const provider = await getProvider();
+      if (!provider) {
+        throw new Error("Failed to initialize wallet connection");
+      }
 
-      // Basic checks
       if (!MINTING_ENABLED) {
         throw new Error("Minting is not yet enabled");
       }
 
-      if (!window.pelagus) {
-        throw new Error("Please install Pelagus wallet");
-      }
-
-      // Debug Pelagus state
-      const debugState = {
-        chainId: await window.pelagus.request({ method: 'eth_chainId' }).catch(e => e.message),
-        balance: await window.pelagus.request({ 
-          method: 'eth_getBalance',
-          params: [currentAccount, 'latest']
-        }).catch(e => e.message)
-      };
-      console.log('Pelagus debug state:', debugState);
-
-      // Get current account
-      const accounts = await window.pelagus.request({ 
-        method: 'eth_accounts' 
-      }).catch(() => []);
-
-      if (!accounts || accounts.length === 0) {
+      const accounts = await provider.request({ method: 'eth_accounts' });
+      if (!accounts?.length) {
         throw new Error("Please connect your wallet first");
       }
+
       const currentAccount = accounts[0];
 
-      // Check current mints without requiring approval
-      console.log('Checking current mints...');
+      // Check current mints
       const mintsResult = await readContract('0x8b7ada50', [currentAccount], false);
-      const currentMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-      console.log('Current mints:', currentMints);
+      if (!mintsResult) {
+        throw new Error("Failed to check current mints");
+      }
 
+      const currentMints = parseInt(mintsResult.slice(2), 16);
       if (currentMints >= 20) {
         throw new Error('You have reached the maximum number of mints (20) per wallet');
       }
 
       // Determine if this should be a free mint
       const shouldBeFree = currentMints === 0;
-      console.log('Should be free mint:', shouldBeFree);
 
       // Prepare transaction
-      console.log('Preparing mint transaction...');
+      const mintValue = shouldBeFree ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
       
-      try {
-        // Check balance first
-        const balance = await window.pelagus.request({
-          method: 'eth_getBalance',
-          params: [currentAccount, 'latest']
-        });
-        
-        const balanceInWei = BigInt(balance);
-        console.log('Current balance (wei):', balanceInWei.toString());
-
-        // Get gas price with debug
-        console.log('Requesting gas price...');
-        const gasPrice = await window.pelagus.request({
-          method: 'eth_gasPrice',
-          params: []
-        }).catch(e => {
-          console.error('Gas price request failed:', e);
-          throw e;
-        });
-        console.log('Current gas price:', {
-          hex: gasPrice,
-          decimal: parseInt(gasPrice, 16),
-          gwei: parseInt(gasPrice, 16) / 1e9
-        });
-
-        // Create base parameters for estimation with debug
-        console.log('Creating transaction parameters. Free mint:', shouldBeFree);
-        const value = shouldBeFree ? '0x0' : '0xDE0B6B3A7640000';
-        console.log('Transaction value:', {
-          hex: value,
-          decimal: parseInt(value || '0', 16),
-          quai: parseInt(value || '0', 16) / 1e18
-        });
-
-        const baseParams = {
+      // Estimate gas first
+      const gasEstimate = await provider.request({
+        method: 'eth_estimateGas',
+        params: [{
           from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
-          data: '0x1249c58b', // mint()
-          value,
-          gasPrice
-        };
-        
-        console.log('Base transaction parameters:', {
-          ...baseParams,
-          fromAccount: currentAccount,
-          contractAddress: NFT_CONTRACT_ADDRESS,
-          valueInQuai: parseInt(value, 16) / 1e18,
-          gasPriceGwei: parseInt(gasPrice, 16) / 1e9
-        });
+          value: mintValue,
+          data: '0x1249c58b' // mint()
+        }]
+      });
 
-        // Log the transaction we're going to estimate
-        console.log('Estimating gas for transaction:', {
-          ...baseParams,
-          shouldBeFree,
-          gasPriceGwei: BigInt(gasPrice) / BigInt(1e9)
-        });
+      // Add 10% buffer to gas estimate
+      const safeGasEstimate = Math.ceil(parseInt(gasEstimate, 16) * 1.1);
 
-        // Estimate gas with complete parameters
-        const gasEstimate = await window.pelagus.request({
-          method: 'eth_estimateGas',
-          params: [baseParams]
-        }).catch(error => {
-          console.error('Gas estimation failed:', error);
-          // Use a higher default for safety
-          return '0x2DC6C0'; // 3,000,000 gas
-        });
-        console.log('Gas estimate:', gasEstimate, '(', parseInt(gasEstimate, 16), ' units)');
-
-        // Calculate total cost
-        const gasCost = BigInt(gasEstimate) * BigInt(gasPrice);
-        const mintCost = shouldBeFree ? BigInt(0) : BigInt('1000000000000000000'); // 0 or 1 QUAI
-        const totalCost = gasCost + mintCost;
-
-        console.log('Cost breakdown:', {
-          gasCost: gasCost.toString(),
-          mintCost: mintCost.toString(),
-          totalCost: totalCost.toString(),
-          balance: balanceInWei.toString()
-        });
-
-        // Check if user has enough balance
-        if (balanceInWei < totalCost) {
-          const requiredQuai = Number(totalCost) / 1e18;
-          throw new Error(
-            shouldBeFree
-              ? `Insufficient balance for gas fees. You need at least ${requiredQuai.toFixed(4)} QUAI.`
-              : `Insufficient balance. You need ${requiredQuai.toFixed(4)} QUAI (1 QUAI + gas fees).`
-          );
-        }
-
-        // Add 10% to gas estimate for safety
-        const safeGasEstimate = BigInt(gasEstimate) * BigInt(11) / BigInt(10);
-        
-        // Prepare final transaction parameters
-        const mintParams = {
+      // Execute mint transaction
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
           from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
+          value: mintValue,
           data: '0x1249c58b', // mint()
-          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
-          gasPrice: gasPrice,
-          gas: '0x' + safeGasEstimate.toString(16) // Convert back to hex with 10% buffer
-        };
+          gas: '0x' + safeGasEstimate.toString(16)
+        }]
+      });
 
-        // Log details for debugging
-        console.log('Final transaction parameters:', {
-          ...mintParams,
-          shouldBeFree,
-          estimatedGasCost: (BigInt(gasEstimate) * BigInt(gasPrice) / BigInt(1e18)).toString() + ' QUAI',
-          totalValue: shouldBeFree ? '0' : '1 QUAI',
-          gasLimit: parseInt(mintParams.gas, 16).toString() + ' units'
-        });
+      console.log('Mint transaction sent:', txHash);
+      setLoading(false);
+      return txHash;
 
-        // Send the transaction
-        console.log('Sending transaction...');
-        const txHash = await window.pelagus.request({
-          method: 'eth_sendTransaction',
-          params: [mintParams]
-        });
-
-        if (!txHash) {
-          throw new Error('No transaction hash received');
-        }
-
-        console.log('Transaction sent successfully, hash:', txHash);
-        return txHash;
-
-      } catch (err) {
-        // Log the complete error for debugging
-        console.error('Transaction error details:', {
-          code: err.code,
-          message: err.message,
-          data: err.data,
-          stack: err.stack
-        });
-        
-        // Calculate actual gas cost in QUAI for better error messages
-        const estimatedGasCost = gasCost ? (gasCost / BigInt(1e18)).toString() : '0.0012';
-        
-        if (err.code === 4001) {
-          // User rejected the transaction
-          const message = shouldBeFree
-            ? `Please note: This is a free mint - you only need to pay gas fees (approximately ${estimatedGasCost} QUAI).`
-            : `Please note: The mint costs 1 QUAI plus gas fees (approximately ${estimatedGasCost} QUAI).`;
-            
-          throw new Error(`Transaction cancelled. ${message} Please try again.`);
-        }
-        
-        if (err.message && err.message.toLowerCase().includes('insufficient')) {
-          // Insufficient balance error
-          const requiredTotal = shouldBeFree 
-            ? estimatedGasCost
-            : (BigInt(1e18) + gasCost) / BigInt(1e18);
-            
-          throw new Error(
-            `Insufficient balance. You need ${requiredTotal} QUAI ${shouldBeFree ? 'for gas fees' : 'total (1 QUAI + gas fees)'}.`
-          );
-        }
-        
-        // For other errors, provide context about the attempted operation
-        throw new Error(
-          `Failed to ${shouldBeFree ? 'process free mint' : 'mint NFT'}: ${err.message || 'Unknown error'}. ` +
-          'Please ensure you have enough QUAI and are connected to Cyprus-1 network.'
-        );
-      }
-
-      // Refresh data
-      await loadContractData();
     } catch (err) {
       console.error("Error minting NFT:", err);
       setError(err.message || "Error minting NFT");
-    } finally {
       setLoading(false);
+      throw err;
     }
   };
-
-  // Function to get owned NFTs
-  const [ownedNFTs, setOwnedNFTs] = useState([]);
-  
-  const loadOwnedNFTs = async () => {
-    if (!account) return;
-    
-    try {
-      // Get total mints for the wallet
-      const mintsResult = await readContract('0x8b7ada50', [account], false);
-      const totalMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-      
-      // Fetch each NFT's metadata
-      const nfts = [];
-      for (let i = 1; i <= totalMints; i++) {
-        try {
-          const response = await fetch(`/assets/json/${i}`);
-          if (response.ok) {
-            const metadata = await response.json();
-            nfts.push({
-              id: i,
-              ...metadata
-            });
-          }
-        } catch (err) {
-          console.error(`Error loading NFT #${i} metadata:`, err);
-        }
-      }
-      
-      setOwnedNFTs(nfts);
-    } catch (err) {
-      console.error("Error loading owned NFTs:", err);
-    }
-  };
-
-  // Load NFTs when account changes
-  useEffect(() => {
-    if (account) {
-      loadOwnedNFTs();
-    } else {
-      setOwnedNFTs([]);
-    }
-  }, [account]);
-
-  // Reload NFTs after successful mint
-  useEffect(() => {
-    if (!loading && account) {
-      loadOwnedNFTs();
-    }
-  }, [loading]);
 
   return (
-    <Box sx={{ maxWidth: '400px', mx: 'auto' }}>
+    <Box sx={{ width: '100%', p: 3 }}>
       <Stack spacing={3} alignItems="center">
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            color: '#00ff9d',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            textAlign: 'center',
-            mb: 1
-          }}
-        >
-          MINT YOUR CROAK CITY NFT (1st Free)
+        <Typography variant="h4" gutterBottom>
+          Mint Your Croak City NFT
         </Typography>
 
-        {/* Display owned NFTs */}
-        {ownedNFTs.length > 0 && (
-          <Box sx={{ width: '100%', mt: 4 }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontSize: '1rem',
-                color: '#00ff9d',
-                mb: 2,
-                textAlign: 'center'
-              }}
-            >
-              Your Croak City NFTs
-            </Typography>
-            <Stack spacing={2}>
-              {ownedNFTs.map((nft) => (
-                <Box
-                  key={nft.id}
-                  sx={{
-                    border: '1px solid #00ff9d',
-                    borderRadius: '8px',
-                    p: 2,
-                    backgroundColor: 'rgba(0, 255, 157, 0.1)'
-                  }}
-                >
-                  <Stack spacing={1}>
-                    <Typography sx={{ color: '#fff' }}>
-                      {nft.name}
-                    </Typography>
-                    {nft.image && (
-                      <Box
-                        component="img"
-                        src={nft.image}
-                        alt={nft.name}
-                        sx={{
-                          width: '100%',
-                          height: 'auto',
-                          borderRadius: '4px'
-                        }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    {nft.attributes?.map((attr, index) => (
-                      <Typography 
-                        key={index}
-                        sx={{ 
-                          color: '#00ff9d',
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        {attr.trait_type}: {attr.value}
-                      </Typography>
-                    ))}
-                  </Stack>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-        )}
-
-        <Box sx={{ width: '100%', px: 2 }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: '#00ff9d',
-              mb: 1,
-              fontSize: '0.8rem',
-              textAlign: 'center',
-              opacity: 0.9
-            }}
-          >
-            Select number of NFTs to mint (max 20)
-          </Typography>
-          <Slider
-            value={mintAmount}
-            onChange={handleMintChange}
-            min={1}
-            max={20}
-            marks
-            valueLabelDisplay="on"
-            sx={{
-              color: '#00ff9d',
-              '& .MuiSlider-mark': {
-                backgroundColor: '#00ff9d',
-              },
-              '& .MuiSlider-rail': {
-                opacity: 0.5,
-              },
-            }}
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="body2" sx={{ color: 'rgba(0, 255, 157, 0.7)', mb: 1.5, fontSize: '0.8rem' }}>
-            Total Minted: {totalSupply} / {maxSupply}
-          </Typography>
-        </Box>
-
         {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
+          <Typography color="error" align="center">
             {error}
           </Typography>
         )}
 
-        <Button
-          variant="contained"
-          onClick={!isConnected ? connectWallet : mintNFT}
-          disabled={loading}
-          sx={{
-            background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
-            color: '#0a1f13',
-            fontWeight: 'bold',
-            fontSize: '0.9rem',
-            py: 1,
-            px: 3,
-            '&:hover': {
-              background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
-            },
-          }}
-        >
-          {loading ? (
-            <CircularProgress size={24} sx={{ color: '#0a1f13' }} />
-          ) : !window.pelagus ? (
-            'Install Pelagus Wallet'
-          ) : !isConnected ? (
-            'Connect Wallet'
-          ) : (
-            <>Mint Now {account ? `(${account.slice(0, 6)}...${account.slice(-4)})` : ''}</>
-          )}
-        </Button>
+        <Typography variant="body1" align="center">
+          {`Total Supply: ${totalSupply} / ${maxSupply}`}
+        </Typography>
+
+        {isConnected && (
+          <>
+            <Typography variant="h6" gutterBottom>
+              {hasFreeMint ? 'You have a free mint available!' : 'Mint Cost: 1 QUAI'}
+            </Typography>
+            
+            {loading ? (
+              <CircularProgress />
+            ) : (
+              <Button
+                variant="contained"
+                onClick={mintNFT}
+                disabled={loading}
+                sx={{
+                  background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
+                  borderRadius: 8,
+                  border: 0,
+                  color: 'white',
+                  height: 48,
+                  padding: '0 30px',
+                  boxShadow: '0 3px 5px 2px rgba(0, 255, 157, .3)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
+                  },
+                }}
+              >
+                {loading ? 'Minting...' : 'Mint NFT'}
+              </Button>
+            )}
+          </>
+        )}
+
+        {!isConnected && (
+          <Button
+            variant="contained"
+            onClick={connectWallet}
+            sx={{
+              background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
+              borderRadius: 8,
+              border: 0,
+              color: 'white',
+              height: 48,
+              padding: '0 30px',
+              boxShadow: '0 3px 5px 2px rgba(0, 255, 157, .3)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
+              },
+            }}
+          >
+            Connect Wallet
+          </Button>
+        )}
       </Stack>
     </Box>
   );
