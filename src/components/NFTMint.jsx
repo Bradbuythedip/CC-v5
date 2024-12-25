@@ -118,10 +118,11 @@ const NFTMint = () => {
       }
 
       // Get contract data
-      const [totalSupply, maxSupply, mintsPerWallet] = await Promise.all([
+      const [totalSupply, maxSupply, mintsPerWallet, hasNotUsedFreeMint] = await Promise.all([
         readContract("totalSupply"),
         readContract("maxSupply"),
-        readContract("mintsPerWallet", [accounts[0]])
+        readContract("mintsPerWallet", [accounts[0]]),
+        readContract("hasFreeMint", [accounts[0]])
       ]);
 
       // Convert BigNumber to number if needed
@@ -134,7 +135,7 @@ const NFTMint = () => {
       // Update state
       setTotalSupply(total);
       setMaxSupply(max);
-      setHasFreeMint(mintsCount === 0);
+      setHasFreeMint(hasNotUsedFreeMint);
       setError(null);
 
     } catch (err) {
@@ -221,7 +222,7 @@ const NFTMint = () => {
       }
 
       // Prepare transaction
-      const mintValue = hasFreeMint ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
+      const mintValue = hasFreeMint ? '0x0' : quais.parseEther('1.0').toString(); // 0 or 1 QUAI
 
       // Create interface for mint function
       const mintAbi = ["function mint() payable"];
