@@ -92,14 +92,26 @@ const NFTMint = () => {
       name: 'hasUsedFreeMint',
       type: 'function',
       stateMutability: 'view',
-      inputs: [{ type: 'address' }],
-      outputs: [{ type: 'bool' }]
+      inputs: [{ type: 'address', name: 'user' }],
+      outputs: [{ type: 'bool', name: 'hasUsed' }]
     }
   };
 
   // Function to check contract read data
   const readContract = async (methodName, params = []) => {
     try {
+      // First verify network
+      const networkInfo = await window.pelagus.request({
+        method: 'quai_getNetwork'
+      });
+      console.log('Current network:', networkInfo);
+
+      // Get zone information
+      const zoneInfo = await window.pelagus.request({
+        method: 'quai_getZone'
+      });
+      console.log('Current zone:', zoneInfo);
+
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) return null;
 
@@ -117,15 +129,27 @@ const NFTMint = () => {
       console.log(`Calling ${methodName} with params:`, params);
       console.log('Encoded data:', data);
 
-      // Create provider using Pelagus directly
-      const result = await window.pelagus.request({
-        method: 'quai_call',
-        params: [{
-          to: NFT_CONTRACT_ADDRESS,
-          data: data,
-          from: accounts[0]
-        }, 'latest']
-      });
+      // Prepare the call parameters
+      const callParams = {
+        to: NFT_CONTRACT_ADDRESS,
+        data: data,
+        from: accounts[0]
+      };
+      
+      console.log('Call parameters:', callParams);
+
+      try {
+        // Create provider using Pelagus directly
+        const result = await window.pelagus.request({
+          method: 'quai_call',
+          params: [callParams, 'latest']
+        });
+
+        // Check if result is empty
+        if (!result || result === '0x') {
+          console.warn(`Empty result received for ${methodName}. This might indicate a revert.`);
+          throw new Error('Contract call reverted');
+        }
 
       console.log(`Raw result for ${methodName}:`, result);
 
@@ -389,6 +413,25 @@ const NFTMint = () => {
     }
   };
 
+  // Verify contract address is valid for the zone
+  const verifyContractAddress = async () => {
+    try {
+      const code = await window.pelagus.request({
+        method: 'quai_getCode',
+        params: [NFT_CONTRACT_ADDRESS, 'latest']
+      });
+      
+      if (!code || code === '0x') {
+        throw new Error(`No contract found at address ${NFT_CONTRACT_ADDRESS}`);
+      }
+      console.log('Contract verified at:', NFT_CONTRACT_ADDRESS);
+      return true;
+    } catch (error) {
+      console.error('Contract verification failed:', error);
+      return false;
+    }
+  };
+
   // Initialize connection check
   useEffect(() => {
     const checkConnection = async () => {
@@ -397,6 +440,13 @@ const NFTMint = () => {
         const isCorrectChain = await checkChain();
         if (!isCorrectChain) {
           setError("Please connect to Quai Network Cyprus1");
+          return;
+        }
+
+        // Verify contract exists
+        const isContractValid = await verifyContractAddress();
+        if (!isContractValid) {
+          setError("Contract not found on this network");
           return;
         }
 
