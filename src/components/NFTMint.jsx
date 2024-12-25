@@ -32,6 +32,26 @@ const waitForPelagus = async () => {
   return false;
 };
 
+// Helper function to wait for Pelagus initialization in Firefox
+const waitForFirefoxPelagus = async () => {
+  const maxAttempts = 10;
+  const interval = 500; // 500ms between attempts
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    if (window.pelagus) {
+      try {
+        // Try to get chainId as a basic check
+        await window.pelagus.request({ method: 'eth_chainId' });
+        return true;
+      } catch (err) {
+        console.log('Waiting for Pelagus to be ready in Firefox...');
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, interval));
+  }
+  return false;
+};
+
 // Helper function to get provider
 const getProvider = async () => {
   try {
@@ -39,10 +59,18 @@ const getProvider = async () => {
       throw new Error("Browser environment not detected");
     }
 
-    // Wait for Pelagus to initialize
-    const isPelagusReady = await waitForPelagus();
-    if (!isPelagusReady) {
-      throw new Error("Pelagus wallet not initialized after waiting");
+    // Special handling for Firefox
+    if (/Firefox/.test(navigator.userAgent)) {
+      const isPelagusReady = await waitForFirefoxPelagus();
+      if (!isPelagusReady) {
+        throw new Error("Please ensure Pelagus extension is properly installed and enabled in Firefox");
+      }
+    } else {
+      // For Chrome and others, use the original wait function
+      const isPelagusReady = await waitForPelagus();
+      if (!isPelagusReady) {
+        throw new Error("Pelagus wallet not initialized after waiting");
+      }
     }
 
     // Request account access if needed
@@ -238,11 +266,23 @@ const NFTMint = () => {
         return;
       }
 
+      // Clear any previous errors when checking connection
+      setError(null);
+
       // Check if Pelagus is available
       if (!window.pelagus) {
         console.log('Pelagus not available');
         setIsConnected(false);
         setAccount(null);
+        
+        // Check if Firefox and provide specific guidance
+        if (/Firefox/.test(navigator.userAgent)) {
+          const firefoxVersion = parseInt(navigator.userAgent.split('Firefox/')[1]);
+          if (firefoxVersion < 102) {
+            setError('Please update Firefox to version 102 or later to use Pelagus');
+            return;
+          }
+        }
         return;
       }
 
@@ -325,10 +365,12 @@ const NFTMint = () => {
 
   const connectWallet = async () => {
     try {
-      // Check if Chrome and Pelagus
+      // Check for supported browsers
       const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-      if (!isChrome) {
-        setError("Please use Chrome browser to connect Pelagus wallet");
+      const isFirefox = /Firefox/.test(navigator.userAgent);
+      
+      if (!isChrome && !isFirefox) {
+        setError("Please use Chrome or Firefox to connect Pelagus wallet");
         return;
       }
       
@@ -338,18 +380,31 @@ const NFTMint = () => {
       }
 
       try {
-        // Request account access
+        // Check network and request account access
+        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+        console.log('Connected to chain:', chainId);
+        
+        // Cyprus-1 chainId is 0x2330
+        if (chainId !== '0x2330') {
+          throw new Error('Please connect to Cyprus-1 network in Pelagus');
+        }
+
         const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
           setIsConnected(true);
           setAccount(accounts[0]);
+          setError(null); // Clear any previous errors
           // Load contract data after successful connection
           await loadContractData();
         }
       } catch (err) {
+        console.error('Connection error:', err);
         if (err.code === 4001) {
           // User rejected the connection request
           throw new Error("Please approve the connection request in Pelagus");
+        }
+        if (err.code === -32002) {
+          throw new Error("Connection request already pending. Please check Pelagus extension.");
         }
         throw err;
       }
