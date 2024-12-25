@@ -138,25 +138,19 @@ const NFTMint = () => {
       
       console.log('Call parameters:', callParams);
 
-      try {
-        // Create provider using Pelagus directly
-        const result = await window.pelagus.request({
-          method: 'quai_call',
-          params: [callParams, 'latest']
-        });
+      // Create provider using Pelagus directly
+      const result = await window.pelagus.request({
+        method: 'quai_call',
+        params: [callParams, 'latest']
+      });
 
-        // Check if result is empty
-        if (!result || result === '0x') {
-          console.warn(`Empty result received for ${methodName}. This might indicate a revert.`);
-          throw new Error('Contract call reverted');
-        }
+      // Check if result is empty
+      if (!result || result === '0x') {
+        console.warn(`Empty result received for ${methodName}. This might indicate a revert.`);
+        throw new Error('Contract call reverted');
+      }
 
       console.log(`Raw result for ${methodName}:`, result);
-
-      if (!result) {
-        console.warn(`No result returned for ${methodName}`);
-        return null;
-      }
 
       // Decode the result
       const decodedResult = iface.decodeFunctionResult(methodName, result);
