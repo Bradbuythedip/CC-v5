@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { connectToWallet } from '../utils/quaiNetwork';
+import { connectToWallet, requestAccounts } from '../utils/quaiNetwork';
+import { quais } from 'quais';
 
 const ConnectButton = ({ onConnect }) => {
     const [isConnecting, setIsConnecting] = useState(false);
@@ -9,11 +10,14 @@ const ConnectButton = ({ onConnect }) => {
     useEffect(() => {
         // Check if already connected
         const checkConnection = async () => {
-            if (window.pelagus && window.pelagus.isConnected()) {
+            if (window.pelagus) {
                 try {
-                    const connection = await connectToWallet();
-                    setAccountInfo(connection.account);
-                    if (onConnect) onConnect(connection);
+                    const accounts = await window.pelagus.request({ method: 'quai_accounts' });
+                    if (accounts && accounts.length > 0) {
+                        const connection = await connectToWallet();
+                        setAccountInfo(connection.account);
+                        if (onConnect) onConnect(connection);
+                    }
                 } catch (err) {
                     console.error('Initial connection check failed:', err);
                 }
@@ -39,6 +43,11 @@ const ConnectButton = ({ onConnect }) => {
         }
     };
 
+    const formatBalance = (balance) => {
+        if (!balance) return '0';
+        return quais.formatUnits(balance, 18);
+    };
+
     if (error) {
         return (
             <div>
@@ -46,7 +55,7 @@ const ConnectButton = ({ onConnect }) => {
                     onClick={handleConnect}
                     className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                 >
-                    Error: {error}
+                    {error.includes('Please connect to Cyprus-1') ? 'Switch to Cyprus-1' : error}
                 </button>
             </div>
         );
@@ -69,11 +78,12 @@ const ConnectButton = ({ onConnect }) => {
                 <button 
                     className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                 >
-                    Connected: {accountInfo.address.slice(0, 6)}...{accountInfo.address.slice(-4)}
+                    {accountInfo.address.slice(0, 6)}...{accountInfo.address.slice(-4)}
                 </button>
-                <span className="text-sm text-gray-600 mt-1">
-                    Zone: {accountInfo.zone}
-                </span>
+                <div className="flex flex-col items-center text-sm text-gray-600 mt-1">
+                    <span>Zone: {accountInfo.zone}</span>
+                    <span>Balance: {formatBalance(accountInfo.balance)} QUAI</span>
+                </div>
             </div>
         );
     }

@@ -7,46 +7,34 @@ export const getZoneFromAddress = (address) => {
     return quais.getZoneFromAddress(address);
 };
 
-export const isCorrectNetwork = async (provider) => {
+export const isCorrectNetwork = async () => {
+    if (!window.pelagus) {
+        throw new Error('Pelagus wallet not found');
+    }
+
     try {
-        const network = await provider.getNetwork();
-        return network.chainId.toString(16) === CYPRUS_1_CHAIN_ID.replace('0x', '');
+        const chainId = await window.pelagus.request({ method: 'quai_chainId' });
+        return chainId === CYPRUS_1_CHAIN_ID;
     } catch (error) {
         console.error('Error checking network:', error);
         return false;
     }
 };
 
-export const switchToCyprus1 = async () => {
+export const getBalance = async (address) => {
     if (!window.pelagus) {
         throw new Error('Pelagus wallet not found');
     }
 
     try {
-        await window.pelagus.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: CYPRUS_1_CHAIN_ID }],
+        const balance = await window.pelagus.request({
+            method: 'quai_getBalance',
+            params: [address, 'latest']
         });
+        return balance;
     } catch (error) {
-        if (error.code === 4902) {
-            await window.pelagus.request({
-                method: 'wallet_addEthereumChain',
-                params: [
-                    {
-                        chainId: CYPRUS_1_CHAIN_ID,
-                        chainName: 'Cyprus-1',
-                        nativeCurrency: {
-                            name: 'QUAI',
-                            symbol: 'QUAI',
-                            decimals: 18,
-                        },
-                        rpcUrls: [CYPRUS_1_RPC],
-                    },
-                ],
-            });
-        } else {
-            throw error;
-        }
+        console.error('Error getting balance:', error);
+        throw error;
     }
 };
 
@@ -56,26 +44,66 @@ export const requestAccounts = async () => {
     }
 
     try {
-        // First ensure we're on the correct network
-        const provider = new quais.providers.Web3Provider(window.pelagus);
-        const isCorrectNet = await isCorrectNetwork(provider);
+        // Check if we already have access to accounts
+        let accounts = await window.pelagus.request({ method: 'quai_accounts' });
         
+        // If no accounts or empty array, request access
+        if (!accounts || accounts.length === 0) {
+            accounts = await window.pelagus.request({ method: 'quai_requestAccounts' });
+        }
+
+        if (!accounts || accounts.length === 0) {
+            throw new Error('No accounts available');
+        }
+
+        // Check if we're on the correct network
+        const isCorrectNet = await isCorrectNetwork();
         if (!isCorrectNet) {
-            await switchToCyprus1();
+            throw new Error('Please connect to Cyprus-1 network in Pelagus');
         }
 
-        const accounts = await window.pelagus.request({ method: 'quai_requestAccounts' });
-        if (accounts.length === 0) {
-            throw new Error('No accounts found');
-        }
+        const address = accounts[0];
+        const zone = getZoneFromAddress(address);
+        const balance = await getBalance(address);
 
-        const zone = getZoneFromAddress(accounts[0]);
         return {
-            address: accounts[0],
+            address,
             zone,
+            balance
         };
     } catch (error) {
         console.error('Error requesting accounts:', error);
+        throw error;
+    }
+};
+
+export const sendTransaction = async ({ to, value, data }) => {
+    if (!window.pelagus) {
+        throw new Error('Pelagus wallet not found');
+    }
+
+    try {
+        const accounts = await window.pelagus.request({ method: 'quai_accounts' });
+        if (!accounts || accounts.length === 0) {
+            throw new Error('No accounts available');
+        }
+
+        const from = accounts[0];
+        const txParams = {
+            from,
+            to,
+            value: value ? `0x${value.toString(16)}` : '0x0',
+            data: data || '0x'
+        };
+
+        const txHash = await window.pelagus.request({
+            method: 'quai_sendTransaction',
+            params: [txParams]
+        });
+
+        return txHash;
+    } catch (error) {
+        console.error('Error sending transaction:', error);
         throw error;
     }
 };
@@ -87,13 +115,9 @@ export const connectToWallet = async () => {
         }
 
         const account = await requestAccounts();
-        const provider = new quais.providers.Web3Provider(window.pelagus);
-        const signer = provider.getSigner();
-
         return {
             account,
-            provider,
-            signer,
+            sendTransaction,
         };
     } catch (error) {
         console.error('Wallet connection error:', error);
