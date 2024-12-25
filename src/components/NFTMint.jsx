@@ -102,44 +102,39 @@ const NFTMint = () => {
       }
       console.log('Full call data:', data);
 
-      // Get current account if available
-      let from = null;
-      try {
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          from = accounts[0];
-        }
-      } catch (e) {
-        console.log('No account available:', e);
-      }
-
       // Call params for view function
       const callParams = {
         to: NFT_CONTRACT_ADDRESS,
         data,
       };
-      if (from) {
-        callParams.from = from;
-      }
 
-      // Use raw RPC call to node to avoid wallet popup
-      const result = await window.pelagus.request({
-        method: 'quai_call',  // Using quai_call instead of eth_call
-        params: [callParams, 'latest']
-      }).catch(async (err) => {
-        console.log('quai_call failed, falling back to eth_call:', err);
-        // Fallback to eth_call if quai_call fails
-        return window.pelagus.request({
+      // First try eth_call
+      try {
+        const result = await window.pelagus.request({
           method: 'eth_call',
           params: [callParams, 'latest']
         });
-      });
-
-      console.log(`Contract call result: ${result}`);
-      return result;
+        console.log(`Contract call result: ${result}`);
+        return result;
+      } catch (err) {
+        // If eth_call fails, try quai_call
+        if (err.code === 4001) {
+          throw err; // Rethrow user rejections
+        }
+        console.log('eth_call failed, trying quai_call:', err);
+        const result = await window.pelagus.request({
+          method: 'quai_call',
+          params: [callParams, 'latest']
+        });
+        console.log(`Contract call result (quai_call): ${result}`);
+        return result;
+      }
     } catch (error) {
       console.error('Contract call error:', error);
-      // For view functions, assume default values on errors
+      if (error.code === 4001) {
+        throw error; // Rethrow user rejections
+      }
+      // For other errors, return null to use default values
       return null;
     }
   };
@@ -241,40 +236,42 @@ const NFTMint = () => {
 
     checkConnection();
 
-    // Listen for account changes
-    if (window.pelagus) {
-      window.pelagus.on('accountsChanged', (accounts) => {
-        if (accounts.length > 0) {
-          setIsConnected(true);
-          setAccount(accounts[0]);
-          loadContractData();
-        } else {
-          setIsConnected(false);
-          setAccount(null);
-          setError(null); // Clear any previous errors
-        }
-      });
-
-      // Listen for chain changes
-      window.pelagus.on('chainChanged', () => {
-        // Reload the page on chain change as recommended by Pelagus
-        window.location.reload();
-      });
-
-      // Listen for disconnect
-      window.pelagus.on('disconnect', () => {
+    // Store event handlers so we can remove them later
+    const handleAccountsChanged = (accounts) => {
+      if (accounts.length > 0) {
+        setIsConnected(true);
+        setAccount(accounts[0]);
+        loadContractData();
+      } else {
         setIsConnected(false);
         setAccount(null);
         setError(null);
-      });
+      }
+    };
+
+    const handleChainChanged = () => {
+      window.location.reload();
+    };
+
+    const handleDisconnect = () => {
+      setIsConnected(false);
+      setAccount(null);
+      setError(null);
+    };
+
+    // Add event listeners
+    if (window.pelagus) {
+      window.pelagus.on('accountsChanged', handleAccountsChanged);
+      window.pelagus.on('chainChanged', handleChainChanged);
+      window.pelagus.on('disconnect', handleDisconnect);
     }
 
     // Cleanup listeners
     return () => {
       if (window.pelagus) {
-        window.pelagus.removeListener('accountsChanged', () => {});
-        window.pelagus.removeListener('chainChanged', () => {});
-        window.pelagus.removeListener('disconnect', () => {});
+        window.pelagus.removeListener('accountsChanged', handleAccountsChanged);
+        window.pelagus.removeListener('chainChanged', handleChainChanged);
+        window.pelagus.removeListener('disconnect', handleDisconnect);
       }
     };
   }, []);
