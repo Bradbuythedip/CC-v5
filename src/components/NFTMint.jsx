@@ -56,34 +56,30 @@ const NFTMint = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState(null);
 
+  // Contract ABI for read functions
+  const readAbi = [
+    "function totalSupply() view returns (uint256)",
+    "function maxSupply() view returns (uint256)",
+    "function mintsPerWallet(address) view returns (uint256)",
+    "function hasUsedFreeMint(address) view returns (bool)"
+  ];
+
   // Function to check contract read data
-  const readContract = async (functionSelector, params = []) => {
+  const readContract = async (methodName, params = []) => {
     try {
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) return null;
 
-      // Clean and format address parameters
-      const formattedParams = params.map(param => {
-        if (typeof param === 'string' && param.startsWith('0x')) {
-          // Remove 0x prefix and pad to 64 characters
-          return param.slice(2).toLowerCase().padStart(64, '0');
-        }
-        return param;
-      });
+      // Create provider
+      const provider = new window.quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
+      
+      // Create contract instance
+      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, readAbi, provider);
 
-      // Construct the data field
-      const data = functionSelector + formattedParams.join('');
-      console.log('Calling contract with selector:', functionSelector);
-      console.log('Encoded params:', formattedParams.join(''));
-
-      const result = await window.pelagus.request({
-        method: 'quai_call',
-        params: [{
-          to: NFT_CONTRACT_ADDRESS,
-          data,
-          from: accounts[0]
-        }, 'latest']
-      });
+      // Call the method
+      console.log(`Calling ${methodName} with params:`, params);
+      const result = await contract[methodName](...params);
+      console.log(`${methodName} result:`, result);
 
       return result;
     } catch (error) {
@@ -108,16 +104,16 @@ const NFTMint = () => {
       }
 
       // Get contract data
-      const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
-        readContract("0x18160ddd"),
-        readContract("0xd5abeb01"),
-        readContract("0x8b7ada50", [accounts[0]])
+      const [totalSupply, maxSupply, mintsPerWallet] = await Promise.all([
+        readContract("totalSupply"),
+        readContract("maxSupply"),
+        readContract("mintsPerWallet", [accounts[0]])
       ]);
 
-      // Parse results
-      const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
-      const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
-      const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      // Convert BigNumber to number if needed
+      const total = totalSupply ? Number(totalSupply) : 0;
+      const max = maxSupply ? Number(maxSupply) : 420;
+      const mintsCount = mintsPerWallet ? Number(mintsPerWallet) : 0;
 
       console.log("Contract data:", { total, max, mintsCount });
 
@@ -180,50 +176,47 @@ const NFTMint = () => {
       console.log('Minting with account:', currentAccount);
 
       // Check current mints
-      const mintsResult = await readContract('0x8b7ada50', [currentAccount]);
-      if (!mintsResult) {
-        throw new Error("Unable to verify mint eligibility");
-      }
+      const [currentMints, hasFreeMint] = await Promise.all([
+        readContract('mintsPerWallet', [currentAccount]),
+        readContract('hasUsedFreeMint', [currentAccount])
+      ]);
 
-      const currentMints = parseInt(mintsResult.slice(2), 16);
-      if (currentMints >= 20) {
+      const mintCount = Number(currentMints || 0);
+      if (mintCount >= 20) {
         throw new Error('You have reached the maximum number of mints (20) per wallet');
       }
 
       // Prepare transaction
-      const shouldBeFree = currentMints === 0;
-      const mintValue = shouldBeFree ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
+      const mintValue = hasFreeMint ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
+      const provider = new window.quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
+      const signer = provider.getSigner(currentAccount);
+
+      // Create contract instance with mint function
+      const mintAbi = ["function mint() payable"];
+      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, mintAbi, signer);
 
       console.log('Preparing mint transaction:', {
         from: currentAccount,
         to: NFT_CONTRACT_ADDRESS,
-        shouldBeFree,
-        mintValue
+        value: mintValue
       });
 
       // Execute mint transaction
-      const txHash = await window.pelagus.request({
-        method: 'quai_sendTransaction',
-        params: [{
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          value: mintValue,
-          data: '0x1249c58b', // mint()
-          gas: '0x2DC6C0', // 3,000,000 gas
-          maxFeePerGas: '0x4A817C800', // 20 gwei
-          maxPriorityFeePerGas: '0x4A817C800' // 20 gwei
-        }]
-      }).catch(error => {
-        if (error.code === 4001) {
-          console.log('User rejected transaction');
-          throw error;
-        }
-        throw new Error('Failed to send transaction: ' + error.message);
+      const tx = await contract.mint({
+        value: mintValue,
+        gasLimit: '0x2DC6C0', // 3,000,000 gas
+        maxFeePerGas: '0x4A817C800', // 20 gwei
+        maxPriorityFeePerGas: '0x4A817C800' // 20 gwei
       });
 
-      console.log('Mint transaction sent:', txHash);
+      console.log('Mint transaction sent:', tx.hash);
+
+      // Wait for the transaction to be mined
+      console.log('Waiting for transaction confirmation...');
+      await tx.wait();
+
       setLoading(false);
-      return txHash;
+      return tx.hash;
 
     } catch (err) {
       console.error("Error minting NFT:", err);
