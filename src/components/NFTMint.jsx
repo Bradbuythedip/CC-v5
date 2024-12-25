@@ -160,45 +160,43 @@ const NFTMint = () => {
 
       const currentAccount = accounts[0];
 
-      try {
-        // Get all contract data in parallel
-        const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
-          readContract("0x18160ddd"),
-          readContract("0xd5abeb01"),
-          readContract("0x8b7ada50", [currentAccount])
-        ]);
+      // Get all contract data in parallel
+      const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
+        readContract("0x18160ddd"),
+        readContract("0xd5abeb01"),
+        readContract("0x8b7ada50", [currentAccount])
+      ]);
 
-        // Parse results with default values
-        const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
-        console.log("Total supply:", total);
+      // Parse results with default values
+      const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
+      console.log("Total supply:", total);
 
-        const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
-        console.log("Max supply:", max);
+      const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
+      console.log("Max supply:", max);
 
-        const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-        console.log("Current mints for wallet:", mintsCount);
+      const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      console.log("Current mints for wallet:", mintsCount);
 
-        // Calculate states
-        const hasUsedFree = mintsCount > 0;
-        const canMint = mintsCount < 20;
-        const shouldBeFree = !hasUsedFree;
+      // Calculate states
+      const hasUsedFree = mintsCount > 0;
+      const canMint = mintsCount < 20;
+      const shouldBeFree = !hasUsedFree;
 
-        console.log("Mint status:", {
-          hasUsedFree,
-          canMint,
-          shouldBeFree,
-          mintsCount
-        });
+      console.log("Mint status:", {
+        hasUsedFree,
+        canMint,
+        shouldBeFree,
+        mintsCount
+      });
 
-        // Update all states
-        setTotalSupply(total);
-        setMaxSupply(max);
-        setHasFreeMint(shouldBeFree);
-        console.error('Error reading contract:', err);
-        throw new Error('Failed to read contract data');
-      }
+      // Update all states
+      setTotalSupply(total);
+      setMaxSupply(max);
+      setHasFreeMint(shouldBeFree);
+
     } catch (err) {
       console.error("Error loading contract data:", err);
+      
       // Check for common errors that we don't want to show to the user
       const silentErrors = [
         "Failed to read contract data",
@@ -215,8 +213,6 @@ const NFTMint = () => {
       setHasFreeMint(prev => prev === undefined ? true : prev);
     }
   };
-
-  useEffect(() => {
     const checkConnection = async () => {
       try {
         if (typeof window === 'undefined' || !window.pelagus) {
