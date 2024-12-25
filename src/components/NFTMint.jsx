@@ -155,14 +155,14 @@ const NFTMint = () => {
         const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
         console.log('Parsed max supply:', max);
 
-        // Check if user has used free mint
-        const hasUsedFreeResult = await readContract('0xc5c83840', [currentAccount]);
-        console.log('Has used free mint raw result:', hasUsedFreeResult);
-        // If we got a null result (user rejected), assume they haven't used their free mint
-        const hasUsedFree = hasUsedFreeResult ? 
-          hasUsedFreeResult !== '0x0000000000000000000000000000000000000000000000000000000000000000' :
-          false;
-        console.log('Parsed has used free mint:', hasUsedFree);
+        // Check if user has used free mint by using mintsPerWallet
+        const mintsResult = await readContract('0x8b7ada50', [currentAccount]);
+        console.log('Mints per wallet raw result:', mintsResult);
+        const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+        console.log('User has minted:', mintsCount, 'times');
+        // If mints count is 0, they haven't used their free mint
+        const hasUsedFree = mintsCount > 0;
+        console.log('Has used free mint:', hasUsedFree);
 
         // Only update state if we have valid results
         if (totalSupplyResult !== null && maxSupplyResult !== null) {
@@ -322,42 +322,81 @@ const NFTMint = () => {
       const currentAccount = accounts[0];
 
       try {
+        console.log('Checking current mints...');
+        const mintsResult = await readContract('0x8b7ada50', [currentAccount]);
+        const currentMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+        console.log('Current mints:', currentMints);
+
+        if (currentMints >= 20) {
+          throw new Error('You have reached the maximum number of mints (20) per wallet');
+        }
+
+        // Determine if this should be a free mint
+        const shouldBeFree = currentMints === 0;
+        console.log('Should be free mint:', shouldBeFree);
+
         console.log('Preparing mint transaction...');
         const mintParams = {
           from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
-          value: hasFreeMint ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
           data: '0x1249c58b' // mint()
         };
         console.log('Mint transaction params:', mintParams);
 
-        // Send transaction
+        // Request transaction approval with clear message
         const txHash = await window.pelagus.request({
           method: 'eth_sendTransaction',
           params: [mintParams]
+        }).catch(err => {
+          if (err.code === 4001) {
+            throw new Error(shouldBeFree ? 
+              'Please approve the free mint transaction' : 
+              'Please approve the mint transaction (1 QUAI)');
+          }
+          throw err;
         });
+
         console.log('Transaction hash:', txHash);
 
-        console.log('Transaction sent:', txHash);
-
-        // Wait for confirmation
+        // Wait for confirmation with timeout
+        console.log('Waiting for transaction confirmation...');
         let confirmed = false;
-        while (!confirmed) {
+        let attempts = 0;
+        const maxAttempts = 30; // 30 seconds timeout
+
+        while (!confirmed && attempts < maxAttempts) {
           try {
             const receipt = await window.pelagus.request({
               method: 'eth_getTransactionReceipt',
               params: [txHash]
             });
+
             if (receipt) {
-              confirmed = true;
-              console.log('Transaction confirmed:', receipt);
+              // Check if transaction was successful
+              if (receipt.status === '0x1') {
+                confirmed = true;
+                console.log('Transaction confirmed successfully:', receipt);
+              } else {
+                throw new Error('Transaction failed on the blockchain');
+              }
             } else {
+              console.log(`Waiting for confirmation... (${attempts + 1}/${maxAttempts})`);
               await new Promise(resolve => setTimeout(resolve, 1000));
+              attempts++;
             }
           } catch (err) {
-            console.log('Waiting for confirmation...');
+            if (err.message === 'Transaction failed on the blockchain') {
+              throw err;
+            }
+            console.log('Error checking receipt, retrying...');
             await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
           }
+        }
+
+        if (!confirmed) {
+          throw new Error('Transaction confirmation timed out. Please check your wallet for status.');
         }
 
         // Refresh data
