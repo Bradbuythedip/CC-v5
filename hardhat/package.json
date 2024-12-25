@@ -7,13 +7,17 @@
     "deploy": "hardhat run scripts/deploy.js --network cyprus1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.1.0",
-    "ethers": "^5.7.2"
+    "@openzeppelin/contracts": "^4.9.3",
+    "node-fetch": "^3.3.2",
+    "quais": "^1.0.0-alpha.32",
+    "solc": "^0.8.20"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@openzeppelin/hardhat-upgrades": "^3.8.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.4",
     "hardhat": "^2.22.17",
-    "dotenv": "^16.4.7"
+    "quai-hardhat-plugin": "^1.0.3"
   }
 }
