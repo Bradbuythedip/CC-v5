@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
+import { quais } from 'quais';
 
 // Helper function to get connected accounts
 const getConnectedAccounts = async () => {
@@ -71,10 +72,10 @@ const NFTMint = () => {
       if (!accounts?.length) return null;
 
       // Create provider
-      const provider = new window.quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
+      const provider = new quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
       
       // Create contract instance
-      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, readAbi, provider);
+      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, readAbi, provider);
 
       // Call the method
       console.log(`Calling ${methodName} with params:`, params);
@@ -188,12 +189,13 @@ const NFTMint = () => {
 
       // Prepare transaction
       const mintValue = hasFreeMint ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
-      const provider = new window.quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
-      const signer = provider.getSigner(currentAccount);
+      // Create provider and connect to wallet
+      const provider = new quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
+      const signer = new quais.Wallet(window.pelagus.selectedAddress, provider);
 
       // Create contract instance with mint function
       const mintAbi = ["function mint() payable"];
-      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, mintAbi, signer);
+      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, mintAbi, signer);
 
       console.log('Preparing mint transaction:', {
         from: currentAccount,
@@ -201,22 +203,39 @@ const NFTMint = () => {
         value: mintValue
       });
 
-      // Execute mint transaction
-      const tx = await contract.mint({
-        value: mintValue,
-        gasLimit: '0x2DC6C0', // 3,000,000 gas
-        maxFeePerGas: '0x4A817C800', // 20 gwei
-        maxPriorityFeePerGas: '0x4A817C800' // 20 gwei
+      // Prepare mint transaction data
+      const mintData = contract.interface.encodeFunctionData('mint', []);
+
+      // Execute mint transaction through Pelagus
+      const txHash = await window.pelagus.request({
+        method: 'quai_sendTransaction',
+        params: [{
+          from: currentAccount,
+          to: NFT_CONTRACT_ADDRESS,
+          value: mintValue,
+          data: mintData,
+          gas: '0x2DC6C0', // 3,000,000 gas
+          maxFeePerGas: '0x4A817C800', // 20 gwei
+          maxPriorityFeePerGas: '0x4A817C800' // 20 gwei
+        }]
       });
 
-      console.log('Mint transaction sent:', tx.hash);
+      console.log('Mint transaction sent:', txHash);
 
-      // Wait for the transaction to be mined
-      console.log('Waiting for transaction confirmation...');
-      await tx.wait();
+      // Wait for transaction confirmation
+      let confirmed = false;
+      while (!confirmed) {
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (receipt && receipt.blockNumber) {
+          confirmed = true;
+          console.log('Transaction confirmed in block:', receipt.blockNumber);
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before checking again
+        }
+      }
 
       setLoading(false);
-      return tx.hash;
+      return txHash;
 
     } catch (err) {
       console.error("Error minting NFT:", err);
