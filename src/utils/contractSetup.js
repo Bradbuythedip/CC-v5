@@ -9,24 +9,48 @@ const CONTRACT_ABI = [
 ];
 
 export class ContractSetup {
-    constructor(provider) {
-        this.provider = provider;
+    constructor() {
         this.contractAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
+        this.rpcUrl = import.meta.env.VITE_QUAI_RPC_URL;
+        
         if (!this.contractAddress) {
             throw new Error('Contract address not found in environment variables');
+        }
+        if (!this.rpcUrl) {
+            throw new Error('RPC URL not found in environment variables');
         }
     }
 
     async initialize() {
         try {
+            if (!window.pelagus) {
+                throw new Error('Pelagus wallet not found');
+            }
+
+            // Create Web3Provider
+            this.provider = new quais.providers.Web3Provider(window.pelagus, {
+                name: 'Cyprus-1',
+                chainId: 9000,
+            });
+
+            // Create JsonRpcProvider as fallback
+            this.fallbackProvider = new quais.providers.JsonRpcProvider(this.rpcUrl);
+
             // Get signer
             this.signer = this.provider.getSigner();
             
-            // Create contract instance
+            // Create contract instance with signer
             this.contract = new quais.Contract(
                 this.contractAddress,
                 CONTRACT_ABI,
                 this.signer
+            );
+
+            // Also create a read-only contract instance with fallback provider
+            this.readContract = new quais.Contract(
+                this.contractAddress,
+                CONTRACT_ABI,
+                this.fallbackProvider
             );
 
             return this.contract;
@@ -42,23 +66,22 @@ export class ContractSetup {
                 await this.initialize();
             }
 
-            // Check if minting is enabled
-            const mintingEnabled = await this.contract.mintingEnabled();
+            // Use read-only contract for view functions to avoid wallet prompts
+            const mintingEnabled = await this.readContract.mintingEnabled();
             if (!mintingEnabled) {
                 throw new Error('Minting is not enabled');
             }
 
-            // Check if user has free mint
-            const hasFreeMint = await this.contract.hasFreeMint(userAddress);
+            const hasFreeMint = await this.readContract.hasFreeMint(userAddress);
             
             // Get mint price if not free mint
             let value = '0';
             if (!hasFreeMint) {
-                const mintPrice = await this.contract.MINT_PRICE();
+                const mintPrice = await this.readContract.MINT_PRICE();
                 value = mintPrice.toString();
             }
 
-            // Prepare transaction
+            // Now use the signer contract for the actual mint
             const tx = await this.contract.mint({
                 value: value,
                 gasLimit: 500000
@@ -74,8 +97,8 @@ export class ContractSetup {
     }
 }
 
-export const setupContract = async (provider) => {
-    const setup = new ContractSetup(provider);
+export const setupContract = async () => {
+    const setup = new ContractSetup();
     await setup.initialize();
     return setup;
 };

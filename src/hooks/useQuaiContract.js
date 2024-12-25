@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { quais } from 'quais';
 import { setupContract } from '../utils/contractSetup';
 
 export const useQuaiContract = (account) => {
-    const [contract, setContract] = useState(null);
+    const [contractSetup, setContractSetup] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        let mounted = true;
+
         const initContract = async () => {
             if (!window.pelagus || !account) {
                 setLoading(false);
@@ -18,33 +19,38 @@ export const useQuaiContract = (account) => {
                 setLoading(true);
                 setError(null);
 
-                const provider = new quais.providers.Web3Provider(window.pelagus);
-                const contractInstance = await setupContract(provider);
+                const setup = await setupContract();
                 
-                setContract(contractInstance);
+                if (mounted) {
+                    setContractSetup(setup);
+                }
             } catch (err) {
                 console.error('Contract initialization error:', err);
-                setError(err.message || 'Failed to initialize contract');
+                if (mounted) {
+                    setError(err.message || 'Failed to initialize contract');
+                }
             } finally {
-                setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         };
 
         initContract();
 
-        // Cleanup function
         return () => {
-            setContract(null);
+            mounted = false;
+            setContractSetup(null);
         };
     }, [account]);
 
     const mint = async () => {
-        if (!contract || !account) {
+        if (!contractSetup || !account) {
             throw new Error('Contract not initialized or no account connected');
         }
 
         try {
-            return await contract.mint(account.address);
+            return await contractSetup.mint(account.address);
         } catch (error) {
             console.error('Mint error:', error);
             throw error;
@@ -52,7 +58,7 @@ export const useQuaiContract = (account) => {
     };
 
     return {
-        contract,
+        contract: contractSetup?.contract,
         loading,
         error,
         mint
