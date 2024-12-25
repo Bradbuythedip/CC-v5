@@ -51,18 +51,7 @@ const getProvider = async () => {
       await window.pelagus.request({ method: 'eth_requestAccounts' });
     }
 
-    // Create provider
-    const provider = new window.pelagus.providers.Web3Provider(window.pelagus, {
-      name: 'Cyprus1',
-      chainId: 1337,
-      networkId: 1337,
-    });
-
-    // Ensure we're connected to the right network
-    const network = await provider.getNetwork();
-    console.log('Connected to network:', network);
-
-    return provider;
+    return window.pelagus;
   } catch (error) {
     console.error('Error initializing provider:', error);
     throw new Error('Failed to initialize Pelagus provider: ' + error.message);
@@ -105,16 +94,53 @@ const NFTMint = () => {
 
     try {
       const provider = await getProvider();
-      const signer = provider.getSigner();
-      const contract = new window.pelagus.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      
+      // Get the signer's address
+      const accounts = await provider.request({ method: 'eth_accounts' });
+      const currentAccount = accounts[0];
+
+      // Create a contract instance
+      const contract = {
+        async totalSupply() {
+          const result = await provider.request({
+            method: 'eth_call',
+            params: [{
+              to: NFT_CONTRACT_ADDRESS,
+              data: '0x18160ddd' // totalSupply()
+            }, 'latest']
+          });
+          return parseInt(result, 16);
+        },
+        async maxSupply() {
+          const result = await provider.request({
+            method: 'eth_call',
+            params: [{
+              to: NFT_CONTRACT_ADDRESS,
+              data: '0xd5abeb01' // maxSupply()
+            }, 'latest']
+          });
+          return parseInt(result, 16);
+        },
+        async hasUsedFreeMint(address) {
+          const data = '0x' + 'c5c83840' + // hasUsedFreeMint(address)
+                      address.slice(2).padStart(64, '0');
+          const result = await provider.request({
+            method: 'eth_call',
+            params: [{
+              to: NFT_CONTRACT_ADDRESS,
+              data: data
+            }, 'latest']
+          });
+          return result !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+        }
+      };
 
       const total = await contract.totalSupply();
       const max = await contract.maxSupply();
-      const currentAccount = await signer.getAddress();
       const hasUsedFree = await contract.hasUsedFreeMint(currentAccount);
 
-      setTotalSupply(total.toNumber());
-      setMaxSupply(max.toNumber());
+      setTotalSupply(total);
+      setMaxSupply(max);
       setHasFreeMint(!hasUsedFree);
     } catch (err) {
       console.error("Error loading contract data:", err);
@@ -201,23 +227,39 @@ const NFTMint = () => {
       }
 
       const provider = await getProvider();
-      const signer = provider.getSigner();
-      const contract = new window.pelagus.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const accounts = await provider.request({ method: 'eth_accounts' });
+      const currentAccount = accounts[0];
 
-      const mintTx = await contract.mint({
-        value: hasFreeMint ? 0 : window.pelagus.utils.parseEther("1")
+      // Create the mint transaction
+      const mintTx = {
+        from: currentAccount,
+        to: NFT_CONTRACT_ADDRESS,
+        value: hasFreeMint ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+        data: '0x1249c58b' // mint()
+      };
+
+      // Send the transaction
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [mintTx]
       });
 
-      await mintTx.wait();
-      
+      // Wait for transaction confirmation
+      let confirmed = false;
+      while (!confirmed) {
+        const receipt = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash]
+        });
+        if (receipt) {
+          confirmed = true;
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
       // Refresh data
-      const total = await contract.totalSupply();
-      setTotalSupply(total.toNumber());
-      
-      const account = await signer.getAddress();
-      const hasUsedFree = await contract.hasUsedFreeMint(account);
-      setHasFreeMint(!hasUsedFree);
-      
+      await loadContractData();
     } catch (err) {
       console.error("Error minting NFT:", err);
       setError(err.message || "Error minting NFT");
