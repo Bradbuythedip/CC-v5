@@ -57,7 +57,8 @@ const CONTRACT_ABI = [
   "function totalSupply() view returns (uint256)",
   "function maxSupply() view returns (uint256)",
   "function mintsPerWallet(address) view returns (uint256)",
-  "function hasUsedFreeMint(address) view returns (bool)"
+  "function hasUsedFreeMint(address) view returns (bool)",
+  "function mintingEnabled() view returns (bool)"
 ];
 
 const NFTMint = () => {
@@ -247,6 +248,13 @@ const NFTMint = () => {
       // Get contract instance
       const contract = await getContract();
       console.log('Got contract instance:', contract.address);
+
+      // Check if minting is enabled
+      const isMintingEnabled = await contract.mintingEnabled();
+      console.log('Minting enabled:', isMintingEnabled);
+      if (!isMintingEnabled) {
+        throw new Error('Minting is not yet enabled by the contract owner');
+      }
 
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) {

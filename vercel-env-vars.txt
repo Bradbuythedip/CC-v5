@@ -1,0 +1,6 @@
+Environment Variables for Vercel:
+
+VITE_NFT_CONTRACT_ADDRESS=0x0062481f93e27cdb73ce0fa173c3251dffe40127
+VITE_QUAI_RPC_URL=https://rpc.quai.network/cyprus1
+
+Note: The VITE_ prefix is required for Vite to expose these variables to the frontend code.

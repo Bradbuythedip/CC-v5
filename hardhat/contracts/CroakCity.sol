@@ -14,6 +14,7 @@ contract CroakCity is ERC721, Ownable {
     
     string private _baseTokenURI;
     uint256 private _currentTokenId;
+    bool public mintingEnabled;
     
     // Mapping to track free mints per wallet
     mapping(address => bool) public hasUsedFreeMint;
@@ -29,6 +30,7 @@ contract CroakCity is ERC721, Ownable {
     }
 
     function mint() external payable {
+        require(mintingEnabled, "Minting is not enabled");
         require(_currentTokenId < MAX_SUPPLY, "All tokens have been minted");
         require(mintsPerWallet[msg.sender] < MAX_PER_WALLET, "Max mints per wallet reached");
         
@@ -68,6 +70,10 @@ contract CroakCity is ERC721, Ownable {
     }
 
     address public constant TREASURY = 0x001Eb937e54b93EeF35E765c5074e8e643D3887E;
+
+    function setMintingEnabled(bool enabled) external onlyOwner {
+        mintingEnabled = enabled;
+    }
 
     function withdrawBalance() external onlyOwner {
         uint256 balance = address(this).balance;
