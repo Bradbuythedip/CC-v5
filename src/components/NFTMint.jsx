@@ -6,28 +6,66 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
+import { quais } from 'quais';
 
-// Helper function to get accounts
+// Helper function to get connected accounts with zone information
 const getConnectedAccounts = async () => {
   try {
-    return await window.pelagus.request({ method: 'quai_accounts' });
+    const accounts = await window.pelagus.request({ method: 'quai_accounts' });
+    
+    if (!accounts || accounts.length === 0) {
+      return [];
+    }
+
+    // Get zone information for each account
+    const accountsWithZones = accounts.map(address => {
+      const zone = quais.getZoneFromAddress(address);
+      return {
+        address,
+        zone,
+        shard: zone // For compatibility
+      };
+    });
+
+    console.log('Current connected accounts:', accountsWithZones);
+    return accountsWithZones;
+    
   } catch (error) {
     console.error('Failed to get accounts:', error);
     return [];
   }
 };
 
-// Helper function to request accounts
+// Helper function to request accounts with zone detection
 const requestAccounts = async () => {
   try {
-    const accounts = await window.pelagus.request({ method: 'quai_requestAccounts' });
-    // Note: In production, you should use quais.getZoneFromAddress here
-    // const zone = quais.getZoneFromAddress(accounts[0]);
-    return accounts;
+    const accounts = await window.pelagus.request({ 
+      method: 'quai_requestAccounts' 
+    });
+
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No accounts returned');
+    }
+
+    // Get zone information for each account
+    const accountsWithZones = accounts.map(address => {
+      const zone = quais.getZoneFromAddress(address);
+      return {
+        address,
+        zone,
+        shard: zone // For compatibility
+      };
+    });
+
+    console.log('Connected accounts:', accountsWithZones);
+    return accountsWithZones;
+
   } catch (error) {
+    console.error('Account request error:', error);
     if (error.code === 4001) {
       // EIP-1193 userRejectedRequest error
-      throw new Error('User rejected request');
+      console.log('User rejected request');
+      throw error;
     }
     throw error;
   }
@@ -124,9 +162,22 @@ const NFTMint = () => {
       }
 
       const accounts = await requestAccounts();
+      
       if (accounts?.length) {
+        const currentAccount = accounts[0];
+        console.log('Connected to account:', currentAccount);
+        
+        // Get the contract's zone
+        const contractZone = quais.getZoneFromAddress(NFT_CONTRACT_ADDRESS);
+        console.log('Contract zone:', contractZone);
+        
+        // Check if account is in the same zone as the contract
+        if (currentAccount.zone !== contractZone) {
+          throw new Error(`Please switch to an account in the ${contractZone} zone to interact with this contract`);
+        }
+
         setIsConnected(true);
-        setAccount(accounts[0]);
+        setAccount(currentAccount);
         setError(null);
         await loadContractData();
       }
@@ -151,8 +202,17 @@ const NFTMint = () => {
         throw new Error("Please connect your wallet first");
       }
 
+      const currentAccount = accounts[0];
+      console.log('Minting with account:', currentAccount);
+
+      // Verify zone compatibility
+      const contractZone = quais.getZoneFromAddress(NFT_CONTRACT_ADDRESS);
+      if (currentAccount.zone !== contractZone) {
+        throw new Error(`Please switch to an account in the ${contractZone} zone to mint`);
+      }
+
       // Check current mints
-      const mintsResult = await readContract('0x8b7ada50', [accounts[0]]);
+      const mintsResult = await readContract('0x8b7ada50', [currentAccount.address]);
       if (!mintsResult) {
         throw new Error("Unable to verify mint eligibility");
       }
@@ -166,15 +226,29 @@ const NFTMint = () => {
       const shouldBeFree = currentMints === 0;
       const mintValue = shouldBeFree ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
 
+      console.log('Preparing mint transaction:', {
+        from: currentAccount.address,
+        to: NFT_CONTRACT_ADDRESS,
+        zone: currentAccount.zone,
+        shouldBeFree,
+        mintValue
+      });
+
       // Execute mint transaction using Quai method
       const txHash = await window.pelagus.request({
         method: 'quai_sendTransaction',
         params: [{
-          from: accounts[0],
+          from: currentAccount.address,
           to: NFT_CONTRACT_ADDRESS,
           value: mintValue,
           data: '0x1249c58b' // mint()
         }]
+      }).catch(error => {
+        if (error.code === 4001) {
+          console.log('User rejected transaction');
+          throw error;
+        }
+        throw new Error('Failed to send transaction: ' + error.message);
       });
 
       console.log('Mint transaction sent:', txHash);
@@ -212,9 +286,30 @@ const NFTMint = () => {
     if (window.pelagus) {
       window.pelagus.on('accountsChanged', async (accounts) => {
         if (accounts?.length) {
+          // Get account with zone info
+          const accountsWithZones = accounts.map(address => ({
+            address,
+            zone: quais.getZoneFromAddress(address),
+            shard: quais.getZoneFromAddress(address)
+          }));
+
+          const currentAccount = accountsWithZones[0];
+          console.log('Account changed to:', currentAccount);
+
+          // Get contract's zone
+          const contractZone = quais.getZoneFromAddress(NFT_CONTRACT_ADDRESS);
+          
+          // Update connection state
           setIsConnected(true);
-          setAccount(accounts[0]);
-          await loadContractData();
+          setAccount(currentAccount);
+          
+          // Warn if wrong zone
+          if (currentAccount.zone !== contractZone) {
+            setError(`Please switch to an account in the ${contractZone} zone to interact with this contract`);
+          } else {
+            setError(null);
+            await loadContractData();
+          }
         } else {
           setIsConnected(false);
           setAccount(null);
