@@ -323,16 +323,55 @@ const NFTMint = () => {
             setIsConnected(false);
             setAccount(null);
             
-            // Try to switch to Cyprus-1
+            // Try to switch back to Cyprus-1
             try {
+              // Define network config
+              const CYPRUS_1 = {
+                chainName: 'Cyprus-1',
+                chainId: '0x2330',
+                nativeCurrency: {
+                  name: 'QUAI',
+                  symbol: 'QUAI',
+                  decimals: 18
+                },
+                rpcUrls: ['https://rpc.quai.network/cyprus1'],
+                blockExplorerUrls: ['https://cyprus1.quaiscan.io']
+              };
+
+              // Try to add the network first
+              await window.pelagus.request({
+                method: 'wallet_addEthereumChain',
+                params: [CYPRUS_1]
+              });
+
+              // Wait a bit for the network to be added
+              await new Promise(resolve => setTimeout(resolve, 1000));
+
+              // Then try to switch to it
               await window.pelagus.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x2330' }]
+                params: [{ chainId: CYPRUS_1.chainId }]
               });
+
+              // Wait for the switch to complete
+              await new Promise(resolve => setTimeout(resolve, 1000));
+
+              // Verify RPC connection
+              await window.pelagus.request({
+                method: 'eth_getBlockByNumber',
+                params: ['latest', false]
+              });
+
               console.log('Successfully switched back to Cyprus-1');
+              
+              // Don't update state here - let the chainChanged event handle it
             } catch (err) {
               console.error('Failed to switch back to Cyprus-1:', err);
-              // Don't throw, just let the user handle it manually
+              if (err.code === 4902) {
+                setError('Please add Cyprus-1 network in Pelagus manually:\nName: Cyprus-1\nRPC URL: https://rpc.quai.network/cyprus1\nChain ID: 0x2330\nSymbol: QUAI');
+              } else {
+                setError('Please switch to Cyprus-1 network in Pelagus manually');
+              }
             }
             return;
           }
@@ -429,8 +468,8 @@ const NFTMint = () => {
           symbol: 'QUAI',
           decimals: 18
         },
-        rpcUrls: ['https://rpc.cyprus1.colosseum.quai.network'],
-        blockExplorerUrls: ['https://cyprus1.colosseum.quaiscan.io']
+        rpcUrls: ['https://rpc.quai.network/cyprus1'],
+        blockExplorerUrls: ['https://cyprus1.quaiscan.io']
       };
 
       // If not on Cyprus-1, attempt to add/switch to it
@@ -438,32 +477,59 @@ const NFTMint = () => {
         console.log('Not on Cyprus-1, attempting to configure network...');
         
         try {
-          // First try to switch to the network
+          console.log('Attempting to add Cyprus-1 network...');
+          // Always try to add the network first
+          await window.pelagus.request({
+            method: 'wallet_addEthereumChain',
+            params: [CYPRUS_1]
+          });
+          
+          // Wait a bit for the network to be added
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Then try to switch to it
           await window.pelagus.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: CYPRUS_1.chainId }]
           });
+          
+          // Wait for the switch to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Verify the switch
+          const newChainId = await window.pelagus.request({ method: 'eth_chainId' });
+          console.log('Current chain after switch attempt:', newChainId);
+          
+          if (newChainId !== '0x2330') {
+            console.error('Network switch verification failed');
+            throw new Error('Network switch failed verification');
+          }
+          
           console.log('Successfully switched to Cyprus-1');
-        } catch (switchError) {
-          console.error('Switch failed:', switchError);
-
-          // If network doesn't exist, try to add it
+          
+          // Verify RPC connection
           try {
             await window.pelagus.request({
-              method: 'wallet_addEthereumChain',
-              params: [CYPRUS_1]
+              method: 'eth_getBlockByNumber',
+              params: ['latest', false]
             });
-            
-            // After adding, verify the switch
-            const newChainId = await window.pelagus.request({ method: 'eth_chainId' });
-            if (newChainId !== '0x2330') {
-              setError('Please switch to Cyprus-1 network in Pelagus');
-              return;
-            }
-          } catch (addError) {
-            console.error('Add network failed:', addError);
-            setError('Please add Cyprus-1 network in Pelagus manually');
-            return;
+            console.log('RPC connection verified');
+          } catch (rpcError) {
+            console.error('RPC connection failed:', rpcError);
+            throw new Error('Failed to connect to Cyprus-1 RPC');
+          }
+          
+        } catch (error) {
+          console.error('Network configuration failed:', error);
+          
+          if (error.code === 4001) {
+            throw new Error('Please approve the network switch in Pelagus');
+          } else if (error.code === 4902) {
+            throw new Error('Please add Cyprus-1 network in Pelagus manually:\nName: Cyprus-1\nRPC URL: https://rpc.quai.network/cyprus1\nChain ID: 0x2330\nSymbol: QUAI');
+          } else if (error.message?.includes('RPC')) {
+            throw new Error('Unable to connect to Cyprus-1. Please check your internet connection and try again.');
+          } else {
+            throw new Error('Please switch to Cyprus-1 network in Pelagus manually');
           }
         }
       }
