@@ -302,28 +302,31 @@ const NFTMint = () => {
         throw new Error("Please install Pelagus wallet");
       }
 
-      // Get accounts to check address prefix
+      // Check network/zone
+      const networkInfo = await window.pelagus.request({
+        method: 'quai_getNetwork'
+      });
+      console.log('Network info:', networkInfo);
+
+      // Get zone information
+      const zoneInfo = await window.pelagus.request({
+        method: 'quai_getZone'
+      });
+      console.log('Zone info:', zoneInfo);
+
+      // Check if we're on Cyprus-1
+      if (!zoneInfo || !zoneInfo.toLowerCase().includes('cyprus')) {
+        throw new Error("Please switch to Cyprus-1 zone in Pelagus");
+      }
+
+      // Get accounts
       const accounts = await window.pelagus.request({
         method: 'quai_accounts'
       });
-
       console.log('Connected accounts:', accounts);
 
-      // Verify we have a Cyprus-1 address (starts with 0x00)
-      if (!accounts || !accounts.length || !accounts[0].toLowerCase().startsWith('0x00')) {
-        throw new Error("Please connect a Cyprus-1 address (starting with 0x00) in Pelagus");
-      }
-
-      // Get chain ID
-      const chainId = await window.pelagus.request({
-        method: 'quai_chainId'
-      });
-
-      console.log('Chain ID:', chainId);
-
-      // Check if we're on Cyprus-1 (chainId 9000)
-      if (chainId !== '0x2328') { // 9000 in hex
-        throw new Error("Please connect to Cyprus-1 network in Pelagus");
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts found. Please connect your wallet.");
       }
 
       return true;
@@ -375,7 +378,7 @@ const NFTMint = () => {
         }
       });
 
-      window.pelagus.on('chainChanged', async () => {
+      window.pelagus.on('networkChanged', async () => {
         try {
           // Check if we're still on Cyprus-1
           await checkChain();
