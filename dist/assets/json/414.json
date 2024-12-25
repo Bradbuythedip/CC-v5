@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Red #414",
+  "description": "A unique collection of Croak City Red frogs",
+  "image": "https://www.croakcity.com/assets/images/44.png",
+  "dna": "28d921dfa96c3888739d1e78a0ae4ea4cbc0a56a",
+  "edition": 414,
+  "date": 1734990201144,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Lily Pad"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Tears"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Grin"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "None"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

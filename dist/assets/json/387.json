@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Red #387",
+  "description": "A unique collection of Croak City Red frogs",
+  "image": "https://www.croakcity.com/assets/images/17.png",
+  "dna": "f1a099f2f17e8ee5b4ad6e19a4acae21ec2146c6",
+  "edition": 387,
+  "date": 1734990198799,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Purple"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Happy Eyes"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "None"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

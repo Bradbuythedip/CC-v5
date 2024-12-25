@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Brown #180",
+  "description": "A unique collection of Croak City Brown frogs",
+  "image": "ipfs://CroakCityBrown/60.png",
+  "dna": "e8efd00d322bf430eeb6db9e7ec0ba72578bdb18",
+  "edition": 180,
+  "date": 1734990103997,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Navy"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Regular"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Meh"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Karate Master"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

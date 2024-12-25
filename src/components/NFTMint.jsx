@@ -542,9 +542,59 @@ const NFTMint = () => {
     }
   };
 
+  // Function to get owned NFTs
+  const [ownedNFTs, setOwnedNFTs] = useState([]);
+  
+  const loadOwnedNFTs = async () => {
+    if (!account) return;
+    
+    try {
+      // Get total mints for the wallet
+      const mintsResult = await readContract('0x8b7ada50', [account], false);
+      const totalMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      
+      // Fetch each NFT's metadata
+      const nfts = [];
+      for (let i = 1; i <= totalMints; i++) {
+        try {
+          const response = await fetch(`/assets/json/${i}`);
+          if (response.ok) {
+            const metadata = await response.json();
+            nfts.push({
+              id: i,
+              ...metadata
+            });
+          }
+        } catch (err) {
+          console.error(`Error loading NFT #${i} metadata:`, err);
+        }
+      }
+      
+      setOwnedNFTs(nfts);
+    } catch (err) {
+      console.error("Error loading owned NFTs:", err);
+    }
+  };
+
+  // Load NFTs when account changes
+  useEffect(() => {
+    if (account) {
+      loadOwnedNFTs();
+    } else {
+      setOwnedNFTs([]);
+    }
+  }, [account]);
+
+  // Reload NFTs after successful mint
+  useEffect(() => {
+    if (!loading && account) {
+      loadOwnedNFTs();
+    }
+  }, [loading]);
+
   return (
     <Box sx={{ maxWidth: '400px', mx: 'auto' }}>
-      <Stack spacing={1.5} alignItems="center">
+      <Stack spacing={3} alignItems="center">
         <Typography 
           variant="h5" 
           sx={{ 
@@ -558,6 +608,69 @@ const NFTMint = () => {
           }}
         >
           MINT YOUR CROAK CITY NFT (1st Free)
+        </Typography>
+
+        {/* Display owned NFTs */}
+        {ownedNFTs.length > 0 && (
+          <Box sx={{ width: '100%', mt: 4 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontSize: '1rem',
+                color: '#00ff9d',
+                mb: 2,
+                textAlign: 'center'
+              }}
+            >
+              Your Croak City NFTs
+            </Typography>
+            <Stack spacing={2}>
+              {ownedNFTs.map((nft) => (
+                <Box
+                  key={nft.id}
+                  sx={{
+                    border: '1px solid #00ff9d',
+                    borderRadius: '8px',
+                    p: 2,
+                    backgroundColor: 'rgba(0, 255, 157, 0.1)'
+                  }}
+                >
+                  <Stack spacing={1}>
+                    <Typography sx={{ color: '#fff' }}>
+                      {nft.name}
+                    </Typography>
+                    {nft.image && (
+                      <Box
+                        component="img"
+                        src={nft.image}
+                        alt={nft.name}
+                        sx={{
+                          width: '100%',
+                          height: 'auto',
+                          borderRadius: '4px'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    {nft.attributes?.map((attr, index) => (
+                      <Typography 
+                        key={index}
+                        sx={{ 
+                          color: '#00ff9d',
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        {attr.trait_type}: {attr.value}
+                      </Typography>
+                    ))}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+        )}
         </Typography>
 
         <Box sx={{ width: '100%', px: 2 }}>
