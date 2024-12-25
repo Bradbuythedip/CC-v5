@@ -89,21 +89,34 @@ const NFTMint = () => {
   // Contract helper functions for view functions with proper initialization
   const readContract = async (functionSelector, params = [], retry = true) => {
     try {
+      if (!NFT_CONTRACT_ADDRESS) {
+        throw new Error("Contract address not configured");
+      }
+
       // Initialize provider first
-      await getProvider();
+      const provider = await getProvider();
+      if (!provider) {
+        throw new Error("Failed to initialize provider");
+      }
       
-      console.log(`Calling contract with selector: ${functionSelector}`);
-      const data = functionSelector + (params.length > 0 
-        ? params.map(p => p.replace('0x', '').toLowerCase().padStart(64, '0')).join('')
-        : '');
-
-      // Get the current account
-      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+      // Get the current account synchronously to avoid race conditions
+      const accounts = await provider.request({ method: 'eth_accounts' });
       const from = accounts?.[0];
-
       if (!from) {
-        console.log('No account available');
-        return null;
+        throw new Error("No connected account found");
+      }
+
+      // Prepare the call data
+      console.log(`Calling contract with selector: ${functionSelector}`);
+      let data = functionSelector;
+      if (params.length > 0) {
+        const encodedParams = params.map(p => {
+          if (!p) throw new Error("Invalid parameter: " + p);
+          const cleaned = p.replace('0x', '').toLowerCase();
+          return cleaned.padStart(64, '0');
+        }).join('');
+        console.log('Encoded params:', encodedParams);
+        data += encodedParams;
       }
 
       // Call params for view function
@@ -113,37 +126,52 @@ const NFTMint = () => {
         from
       };
 
-      // Try different RPC methods
+      console.log('Call params:', callParams);
+
+      // Try different RPC methods with better error handling
       const methods = retry ? ['eth_call', 'quai_call'] : ['eth_call'];
       let lastError;
+      let lastResult;
 
       for (const method of methods) {
         try {
-          const result = await window.pelagus.request({
+          const result = await provider.request({
             method,
             params: [callParams, 'latest']
           });
           
-          if (result) {
-            console.log(`Contract call success (${method}):`, result);
-            return result;
+          if (result && result !== '0x') {
+            console.log(`Contract call success (${method}):`, {
+              result,
+              parsed: parseInt(result.slice(2), 16)
+            });
+            lastResult = result;
+            break;
           }
         } catch (err) {
           console.log(`${method} failed:`, err);
           lastError = err;
-          if (err.code === 4001 && !retry) break;
+          if (err.code === 4001) break; // User rejected
         }
       }
 
+      // Return the last successful result if we have one
+      if (lastResult) {
+        return lastResult;
+      }
+
+      // Handle specific error cases
       if (lastError?.code === 4001) {
-        console.log('User rejected the request');
-        return null;
+        throw new Error('User rejected the request');
+      } else if (lastError?.message?.includes('execution reverted')) {
+        throw new Error('Contract call reverted: ' + (lastError.message || 'Unknown reason'));
       }
 
       throw lastError || new Error('Contract call failed');
     } catch (error) {
       console.error('Contract call error:', error);
-      return null;
+      // Instead of returning null, throw the error for better error handling
+      throw error;
     }
   };
 
@@ -302,67 +330,121 @@ const NFTMint = () => {
       setLoading(true);
       setError(null);
 
-      // Initialize provider first
-      const provider = await getProvider();
-      if (!provider) {
-        throw new Error("Failed to initialize wallet connection");
-      }
-
-      if (!MINTING_ENABLED) {
+      // Validate environment
+      if (!MINTING_ENABLED || !NFT_CONTRACT_ADDRESS) {
         throw new Error("Minting is not yet enabled");
       }
 
-      const accounts = await provider.request({ method: 'eth_accounts' });
+      console.log('Starting mint process...');
+
+      // Initialize provider with validation
+      const provider = await getProvider().catch(err => {
+        console.error('Provider initialization failed:', err);
+        throw new Error("Failed to initialize wallet connection. Please ensure Pelagus is installed and unlocked.");
+      });
+
+      // Get and validate account
+      const accounts = await provider.request({ method: 'eth_accounts' }).catch(err => {
+        console.error('Account fetch failed:', err);
+        throw new Error("Failed to get account. Please reconnect your wallet.");
+      });
+
       if (!accounts?.length) {
         throw new Error("Please connect your wallet first");
       }
-
       const currentAccount = accounts[0];
 
-      // Check current mints
-      const mintsResult = await readContract('0x8b7ada50', [currentAccount], false);
-      if (!mintsResult) {
-        throw new Error("Failed to check current mints");
+      // Check chain ID
+      const chainId = await provider.request({ method: 'eth_chainId' }).catch(err => {
+        console.error('Chain ID check failed:', err);
+        throw new Error("Failed to verify network. Please ensure you're connected to Cyprus-1.");
+      });
+
+      if (chainId !== '0x2330') {
+        throw new Error('Please switch to Cyprus-1 network in Pelagus');
       }
 
-      const currentMints = parseInt(mintsResult.slice(2), 16);
+      console.log('Checking current mints for account:', currentAccount);
+
+      // Check current mints with detailed error handling
+      let currentMints;
+      try {
+        const mintsResult = await readContract('0x8b7ada50', [currentAccount], false);
+        if (!mintsResult || mintsResult === '0x') {
+          throw new Error("Invalid response from contract");
+        }
+        currentMints = parseInt(mintsResult.slice(2), 16);
+        console.log('Current mints:', currentMints);
+      } catch (err) {
+        console.error('Mints check failed:', err);
+        throw new Error("Failed to verify current mints. Please try again.");
+      }
+
+      // Validate mints count
       if (currentMints >= 20) {
         throw new Error('You have reached the maximum number of mints (20) per wallet');
       }
 
       // Determine if this should be a free mint
       const shouldBeFree = currentMints === 0;
-
-      // Prepare transaction
       const mintValue = shouldBeFree ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
-      
-      // Estimate gas first
-      const gasEstimate = await provider.request({
-        method: 'eth_estimateGas',
-        params: [{
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          value: mintValue,
-          data: '0x1249c58b' // mint()
-        }]
+
+      console.log('Preparing mint transaction:', {
+        shouldBeFree,
+        mintValue,
+        currentMints
       });
 
-      // Add 10% buffer to gas estimate
-      const safeGasEstimate = Math.ceil(parseInt(gasEstimate, 16) * 1.1);
+      // Prepare basic transaction
+      const baseTransaction = {
+        from: currentAccount,
+        to: NFT_CONTRACT_ADDRESS,
+        value: mintValue,
+        data: '0x1249c58b' // mint()
+      };
+      
+      // Estimate gas with retry logic
+      let gasEstimate;
+      try {
+        gasEstimate = await provider.request({
+          method: 'eth_estimateGas',
+          params: [baseTransaction]
+        });
+      } catch (err) {
+        console.error('Gas estimation failed:', err);
+        if (err.message?.includes('insufficient funds')) {
+          throw new Error(shouldBeFree 
+            ? "Insufficient funds for gas fees" 
+            : "Insufficient funds for mint cost and gas fees");
+        }
+        throw new Error("Failed to estimate gas. Please try again.");
+      }
+
+      // Add 20% buffer to gas estimate for safety
+      const safeGasEstimate = Math.ceil(parseInt(gasEstimate, 16) * 1.2);
+      console.log('Gas estimate:', {
+        original: parseInt(gasEstimate, 16),
+        withBuffer: safeGasEstimate
+      });
 
       // Execute mint transaction
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          value: mintValue,
-          data: '0x1249c58b', // mint()
+          ...baseTransaction,
           gas: '0x' + safeGasEstimate.toString(16)
         }]
+      }).catch(err => {
+        console.error('Transaction failed:', err);
+        if (err.code === 4001) {
+          throw new Error("Transaction was rejected. Please try again.");
+        }
+        throw new Error("Failed to send transaction. Please try again.");
       });
 
       console.log('Mint transaction sent:', txHash);
+      
+      // Update UI state
       setLoading(false);
       return txHash;
 
