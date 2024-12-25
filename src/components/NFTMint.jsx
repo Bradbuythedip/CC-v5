@@ -312,12 +312,40 @@ const NFTMint = () => {
         console.log('Chain changed to:', newChainId);
 
         try {
-          // Force hexadecimal format if received as number
-          const chainId = typeof newChainId === 'number' 
-            ? `0x${newChainId.toString(16)}` 
-            : newChainId;
+          // Normalize chain ID
+          let chainId = newChainId;
+          if (typeof chainId === 'number') {
+            chainId = '0x' + chainId.toString(16);
+          }
+          chainId = chainId.toLowerCase();
 
-          if (chainId !== '0x2330') {
+          // Enhanced chain detection
+          const isCyprus1 = 
+            chainId === '0x2330' || 
+            chainId === '2330' ||
+            chainId === '9008' || // Decimal representation
+            chainId === '0x2330';
+
+          console.log('Chain change detection:', {
+            chainId,
+            isCyprus1,
+            rawChainId: newChainId
+          });
+
+          // Verify RPC connection
+          let rpcWorking = false;
+          try {
+            const block = await window.pelagus.request({
+              method: 'eth_getBlockByNumber',
+              params: ['latest', false]
+            });
+            rpcWorking = !!block;
+            console.log('RPC check on chain change:', { blockNumber: block?.number, rpcWorking });
+          } catch (error) {
+            console.error('RPC check failed on chain change:', error);
+          }
+
+          if (!isCyprus1 || !rpcWorking) {
             console.log('Wrong network detected:', chainId);
             setError('Please switch to Cyprus-1 network in Pelagus');
             setIsConnected(false);
@@ -449,11 +477,29 @@ const NFTMint = () => {
         throw new Error("No accounts found. Please unlock Pelagus");
       }
 
-      // Get initial connection info
+      // Get initial connection info with enhanced chain detection
       let chainId;
       try {
+        // Get chain ID and normalize it to hex
         chainId = await window.pelagus.request({ method: 'eth_chainId' });
-        console.log('Initial chain:', chainId);
+        console.log('Raw chain ID:', chainId);
+        
+        // Convert number to hex if needed
+        if (typeof chainId === 'number') {
+          chainId = '0x' + chainId.toString(16);
+        }
+        // Ensure lowercase for comparison
+        chainId = chainId.toLowerCase();
+        
+        // Also try to get the network name for debugging
+        const provider = window.pelagus.getProvider?.() || window.pelagus;
+        console.log('Provider info:', {
+          chainId,
+          networkVersion: provider.networkVersion,
+          selectedAddress: provider.selectedAddress,
+          isConnected: provider.isConnected?.()
+        });
+
       } catch (err) {
         console.error('Failed to get chain ID:', err);
         throw new Error('Unable to detect network. Please check Pelagus connection.');
@@ -472,8 +518,33 @@ const NFTMint = () => {
         blockExplorerUrls: ['https://cyprus1.quaiscan.io']
       };
 
+      // Enhanced chain detection
+      const isCyprus1 = 
+        chainId.toLowerCase() === '0x2330' || 
+        chainId.toLowerCase() === '2330' ||
+        chainId === '9008' || // Decimal representation
+        chainId.toLowerCase() === '0x2330';
+
+      console.log('Chain detection:', {
+        chainId,
+        isCyprus1,
+        expectedChainId: CYPRUS_1.chainId
+      });
+
+      // Verify RPC connection regardless of chain ID
+      try {
+        const block = await window.pelagus.request({
+          method: 'eth_getBlockByNumber',
+          params: ['latest', false]
+        });
+        console.log('RPC connection verified, latest block:', block?.number);
+      } catch (rpcError) {
+        console.error('RPC check failed:', rpcError);
+        // Don't throw here, continue with chain ID check
+      }
+
       // If not on Cyprus-1, attempt to add/switch to it
-      if (chainId !== '0x2330') {
+      if (!isCyprus1) {
         console.log('Not on Cyprus-1, attempting to configure network...');
         
         try {
@@ -534,10 +605,46 @@ const NFTMint = () => {
         }
       }
 
-      // Verify the switch was successful
-      const finalChainId = await window.pelagus.request({ method: 'eth_chainId' });
-      if (finalChainId !== '0x2330') {
-        throw new Error('Failed to switch to Cyprus-1 network. Please try again.');
+      // Final verification with enhanced detection
+      try {
+        let finalChainId = await window.pelagus.request({ method: 'eth_chainId' });
+        if (typeof finalChainId === 'number') {
+          finalChainId = '0x' + finalChainId.toString(16);
+        }
+        finalChainId = finalChainId.toLowerCase();
+
+        const finalIsCyprus1 = 
+          finalChainId === '0x2330' || 
+          finalChainId === '2330' ||
+          finalChainId === '9008' || // Decimal representation
+          finalChainId === '0x2330';
+
+        console.log('Final chain verification:', {
+          chainId: finalChainId,
+          isCyprus1: finalIsCyprus1
+        });
+
+        if (!finalIsCyprus1) {
+          throw new Error('Not connected to Cyprus-1 network. Please verify your network settings.');
+        }
+
+        // Final RPC check
+        const block = await window.pelagus.request({
+          method: 'eth_getBlockByNumber',
+          params: ['latest', false]
+        });
+
+        if (!block) {
+          throw new Error('Unable to connect to Cyprus-1 RPC. Please check your connection.');
+        }
+
+        console.log('Connection fully verified:', {
+          chainId: finalChainId,
+          blockNumber: block.number
+        });
+      } catch (error) {
+        console.error('Final verification failed:', error);
+        throw new Error('Failed to verify Cyprus-1 connection: ' + error.message);
       }
 
       // Set connected state
