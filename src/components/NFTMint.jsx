@@ -7,16 +7,25 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
-import { quais } from 'quais';
+// No need to import quais, it's available on window.quais when Pelagus is installed
 
 // Helper function to get provider
 const getProvider = async () => {
-  if (typeof window.pelagus !== 'undefined') {
-    // Request account access
-    await window.pelagus.send('eth_requestAccounts');
-    return new quais.providers.Web3Provider(window.pelagus, "any");
+  if (typeof window !== 'undefined' && window.pelagus) {
+    try {
+      // Request account access if needed
+      await window.pelagus.request({ method: 'eth_requestAccounts' });
+      
+      // Create Web3Provider and Signer
+      const provider = new window.quais.providers.Web3Provider(window.pelagus);
+      await provider.ready; // Wait for provider to be ready
+      return provider;
+    } catch (error) {
+      console.error('Error initializing provider:', error);
+      throw new Error('Failed to initialize Pelagus provider');
+    }
   }
-  throw new Error("Pelagus wallet not found");
+  throw new Error("Please install Pelagus wallet");
 };
 
 const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
@@ -48,11 +57,36 @@ const NFTMint = () => {
   };
 
 
+  const loadContractData = async () => {
+    if (!MINTING_ENABLED) {
+      setError("Minting is not yet enabled");
+      return;
+    }
+
+    try {
+      const provider = await getProvider();
+      const signer = provider.getSigner();
+      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+
+      const total = await contract.totalSupply();
+      const max = await contract.maxSupply();
+      const currentAccount = await signer.getAddress();
+      const hasUsedFree = await contract.hasUsedFreeMint(currentAccount);
+
+      setTotalSupply(total.toNumber());
+      setMaxSupply(max.toNumber());
+      setHasFreeMint(!hasUsedFree);
+    } catch (err) {
+      console.error("Error loading contract data:", err);
+      setError(`Error loading contract data: ${err.message}`);
+    }
+  };
+
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        if (typeof window.pelagus !== 'undefined') {
-          const accounts = await window.pelagus.send('eth_accounts');
+        if (typeof window !== 'undefined' && window.pelagus) {
+          const accounts = await window.pelagus.request({ method: 'eth_accounts' });
           const isConnected = accounts.length > 0;
           setIsConnected(isConnected);
           if (isConnected) {
@@ -62,31 +96,6 @@ const NFTMint = () => {
         }
       } catch (err) {
         console.error("Error checking connection:", err);
-      }
-    };
-
-    const loadContractData = async () => {
-      if (!MINTING_ENABLED) {
-        setError("Minting is not yet enabled");
-        return;
-      }
-
-      try {
-        const provider = await getProvider();
-        const signer = provider.getSigner();
-        const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
-
-        const total = await contract.totalSupply();
-        const max = await contract.maxSupply();
-        const currentAccount = await signer.getAddress();
-        const hasUsedFree = await contract.hasUsedFreeMint(currentAccount);
-
-        setTotalSupply(total.toNumber());
-        setMaxSupply(max.toNumber());
-        setHasFreeMint(!hasUsedFree);
-      } catch (err) {
-        console.error("Error loading contract data:", err);
-        setError(`Error loading contract data: ${err.message}`);
       }
     };
 
@@ -116,14 +125,25 @@ const NFTMint = () => {
         return;
       }
       
-      if (typeof window.pelagus !== 'undefined') {
-        await window.pelagus.send('eth_requestAccounts');
+      if (typeof window !== 'undefined' && window.pelagus) {
+        // Request account access
+        await window.pelagus.request({ method: 'eth_requestAccounts' });
+        
+        // Get accounts
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          setIsConnected(true);
+          setAccount(accounts[0]);
+          // Load contract data after successful connection
+          await loadContractData();
+        }
       } else {
         window.open('https://pelagus.space/download', '_blank');
+        throw new Error("Please install Pelagus wallet");
       }
     } catch (err) {
       console.error("Error connecting wallet:", err);
-      setError("Error connecting wallet");
+      setError(err.message || "Error connecting wallet");
     }
   };
 
@@ -142,10 +162,10 @@ const NFTMint = () => {
 
       const provider = await getProvider();
       const signer = provider.getSigner();
-      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      const contract = new window.quais.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
 
       const mintTx = await contract.mint({
-        value: hasFreeMint ? 0 : quais.utils.parseEther("1")
+        value: hasFreeMint ? 0 : window.quais.utils.parseEther("1")
       });
 
       await mintTx.wait();
