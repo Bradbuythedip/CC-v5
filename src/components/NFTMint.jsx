@@ -87,7 +87,7 @@ const NFTMint = () => {
   };
 
   // Contract helper functions for view functions
-  const readContract = async (functionSelector, params = []) => {
+  const readContract = async (functionSelector, params = [], retry = true) => {
     try {
       console.log(`Calling contract with selector: ${functionSelector}`);
       let data = functionSelector;
@@ -100,41 +100,62 @@ const NFTMint = () => {
         console.log('Encoded params:', encodedParams);
         data += encodedParams;
       }
-      console.log('Full call data:', data);
+
+      // Get the current account if available
+      let from;
+      try {
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        if (accounts?.length > 0) {
+          from = accounts[0];
+        }
+      } catch (e) {
+        console.log('Failed to get current account:', e);
+      }
 
       // Call params for view function
       const callParams = {
         to: NFT_CONTRACT_ADDRESS,
         data,
       };
-
-      // First try eth_call
-      try {
-        const result = await window.pelagus.request({
-          method: 'eth_call',
-          params: [callParams, 'latest']
-        });
-        console.log(`Contract call result: ${result}`);
-        return result;
-      } catch (err) {
-        // If eth_call fails, try quai_call
-        if (err.code === 4001) {
-          throw err; // Rethrow user rejections
-        }
-        console.log('eth_call failed, trying quai_call:', err);
-        const result = await window.pelagus.request({
-          method: 'quai_call',
-          params: [callParams, 'latest']
-        });
-        console.log(`Contract call result (quai_call): ${result}`);
-        return result;
+      if (from) {
+        callParams.from = from;
       }
+
+      // Try different RPC methods
+      const methods = retry ? ['eth_call', 'quai_call'] : ['eth_call'];
+      let lastError;
+
+      for (const method of methods) {
+        try {
+          const result = await window.pelagus.request({
+            method,
+            params: [callParams, 'latest']
+          });
+          
+          if (result) {
+            console.log(`Contract call success (${method}):`, result);
+            return result;
+          }
+        } catch (err) {
+          console.log(`${method} failed:`, err);
+          lastError = err;
+          // If it's a user rejection and we're not retrying, break immediately
+          if (err.code === 4001 && !retry) break;
+          // Otherwise continue to next method
+        }
+      }
+
+      // If we got here, all methods failed
+      if (lastError?.code === 4001) {
+        console.log('All methods failed with user rejection');
+        // For view functions, continue with default values instead of throwing
+        return null;
+      }
+
+      throw lastError || new Error('All RPC methods failed');
     } catch (error) {
       console.error('Contract call error:', error);
-      if (error.code === 4001) {
-        throw error; // Rethrow user rejections
-      }
-      // For other errors, return null to use default values
+      // For view functions, we'll use default values instead of throwing
       return null;
     }
   };
@@ -345,6 +366,7 @@ const NFTMint = () => {
       setLoading(true);
       setError(null);
 
+      // Basic checks
       if (!MINTING_ENABLED) {
         throw new Error("Minting is not yet enabled");
       }
@@ -354,49 +376,54 @@ const NFTMint = () => {
       }
 
       // Get current account
-      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+      const accounts = await window.pelagus.request({ 
+        method: 'eth_accounts' 
+      }).catch(() => []);
+
       if (!accounts || accounts.length === 0) {
         throw new Error("Please connect your wallet first");
       }
       const currentAccount = accounts[0];
 
-      try {
-        console.log('Checking current mints...');
-        const mintsResult = await readContract('0x8b7ada50', [currentAccount]);
-        const currentMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-        console.log('Current mints:', currentMints);
+      // Check current mints without requiring approval
+      console.log('Checking current mints...');
+      const mintsResult = await readContract('0x8b7ada50', [currentAccount], false);
+      const currentMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      console.log('Current mints:', currentMints);
 
-        if (currentMints >= 20) {
-          throw new Error('You have reached the maximum number of mints (20) per wallet');
+      if (currentMints >= 20) {
+        throw new Error('You have reached the maximum number of mints (20) per wallet');
+      }
+
+      // Determine if this should be a free mint
+      const shouldBeFree = currentMints === 0;
+      console.log('Should be free mint:', shouldBeFree);
+
+      // Prepare transaction
+      console.log('Preparing mint transaction...');
+      const mintParams = {
+        from: currentAccount,
+        to: NFT_CONTRACT_ADDRESS,
+        value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+        data: '0x1249c58b' // mint()
+      };
+      console.log('Mint transaction params:', mintParams);
+
+      // Send transaction
+      const txHash = await window.pelagus.request({
+        method: 'eth_sendTransaction',
+        params: [mintParams]
+      }).catch(err => {
+        console.error('Transaction failed:', err);
+        if (err.code === 4001) {
+          throw new Error(shouldBeFree ? 
+            'Please approve the free mint transaction' : 
+            'Please approve the mint transaction (1 QUAI)');
         }
+        throw new Error(`Transaction failed: ${err.message || 'Unknown error'}`);
+      });
 
-        // Determine if this should be a free mint
-        const shouldBeFree = currentMints === 0;
-        console.log('Should be free mint:', shouldBeFree);
-
-        console.log('Preparing mint transaction...');
-        const mintParams = {
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
-          data: '0x1249c58b' // mint()
-        };
-        console.log('Mint transaction params:', mintParams);
-
-        // Request transaction approval with clear message
-        const txHash = await window.pelagus.request({
-          method: 'eth_sendTransaction',
-          params: [mintParams]
-        }).catch(err => {
-          if (err.code === 4001) {
-            throw new Error(shouldBeFree ? 
-              'Please approve the free mint transaction' : 
-              'Please approve the mint transaction (1 QUAI)');
-          }
-          throw err;
-        });
-
-        console.log('Transaction hash:', txHash);
+      console.log('Transaction hash:', txHash);
 
         // Wait for confirmation with timeout
         console.log('Waiting for transaction confirmation...');
