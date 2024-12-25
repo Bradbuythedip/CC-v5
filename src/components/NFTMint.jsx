@@ -259,11 +259,17 @@ const NFTMint = () => {
     }
   };
 
+  // State for transaction status
+  const [txStatus, setTxStatus] = useState('');
+  const [showRetry, setShowRetry] = useState(false);
+
   // Mint function
   const mintNFT = async () => {
     try {
       setLoading(true);
       setError(null);
+      setTxStatus('Initializing mint...');
+      setShowRetry(false);
 
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) {
@@ -298,26 +304,24 @@ const NFTMint = () => {
       const mintInterface = new quais.Interface([mintAbi]);
       const mintData = mintInterface.encodeFunctionData('mint', []);
 
-      console.log('Preparing mint transaction:', {
+      setTxStatus('Preparing transaction...');
+      const txParams = {
         from: currentAccount,
         to: NFT_CONTRACT_ADDRESS,
         value: mintValue,
-        data: mintData
-      });
+        data: mintData,
+        gasLimit: '0x2DC6C0', // 3,000,000 gas
+        maxFeePerGas: quais.parseUnits('20', 'gwei').toString(),
+        maxPriorityFeePerGas: quais.parseUnits('20', 'gwei').toString()
+      };
+
+      console.log('Preparing mint transaction:', txParams);
 
       // Execute mint transaction through Pelagus
-      console.log('Sending transaction...');
+      setTxStatus('Waiting for wallet confirmation...');
       const txHash = await window.pelagus.request({
         method: 'quai_sendTransaction',
-        params: [{
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          value: mintValue,
-          data: mintData,
-          gasLimit: '0x2DC6C0', // 3,000,000 gas
-          maxFeePerGas: quais.parseUnits('20', 'gwei').toString(),
-          maxPriorityFeePerGas: quais.parseUnits('20', 'gwei').toString()
-        }]
+        params: [txParams]
       });
 
       console.log('Mint transaction sent:', txHash);
@@ -357,11 +361,26 @@ const NFTMint = () => {
 
     } catch (err) {
       console.error("Error minting NFT:", err);
-      if (err.code !== 4001) { // Don't show error for user rejection
-        setError(err.message || "Failed to mint NFT");
-      }
       setLoading(false);
-      throw err;
+      
+      if (err.code === 4001) {
+        // User rejected transaction
+        setTxStatus('Transaction rejected');
+        setError('You rejected the transaction. Click "Mint NFT" to try again.');
+        setShowRetry(true);
+      } else if (err.message?.includes('insufficient funds')) {
+        setTxStatus('Transaction failed');
+        setError('Insufficient funds to complete the transaction.');
+        setShowRetry(true);
+      } else if (err.message?.includes('gas required exceeds allowance')) {
+        setTxStatus('Transaction failed');
+        setError('Gas estimation failed. The transaction might fail or the contract could be paused.');
+        setShowRetry(true);
+      } else {
+        setTxStatus('Transaction failed');
+        setError(err.message || "Failed to mint NFT. Please try again.");
+        setShowRetry(true);
+      }
     }
   };
 
@@ -532,29 +551,41 @@ const NFTMint = () => {
               {hasFreeMint ? 'You have a free mint available!' : 'Mint Cost: 1 QUAI'}
             </Typography>
             
-            {loading ? (
-              <CircularProgress />
-            ) : (
-              <Button
-                variant="contained"
-                onClick={mintNFT}
-                disabled={loading}
-                sx={{
-                  background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
-                  borderRadius: 8,
-                  border: 0,
-                  color: 'white',
-                  height: 48,
-                  padding: '0 30px',
-                  boxShadow: '0 3px 5px 2px rgba(0, 255, 157, .3)',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
-                  },
-                }}
-              >
-                {loading ? 'Minting...' : 'Mint NFT'}
-              </Button>
-            )}
+            <Stack spacing={2} alignItems="center">
+              {txStatus && (
+                <Typography variant="body2" color="text.secondary">
+                  {txStatus}
+                </Typography>
+              )}
+              
+              {loading ? (
+                <CircularProgress />
+              ) : (
+                <Button
+                  variant="contained"
+                  onClick={mintNFT}
+                  disabled={loading}
+                  sx={{
+                    background: showRetry 
+                      ? 'linear-gradient(45deg, #ff9d00 30%, #cc7d00 90%)'
+                      : 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
+                    borderRadius: 8,
+                    border: 0,
+                    color: 'white',
+                    height: 48,
+                    padding: '0 30px',
+                    boxShadow: '0 3px 5px 2px rgba(0, 255, 157, .3)',
+                    '&:hover': {
+                      background: showRetry
+                        ? 'linear-gradient(45deg, #cc7d00 30%, #ff9d00 90%)'
+                        : 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
+                    },
+                  }}
+                >
+                  {loading ? 'Minting...' : (showRetry ? 'Retry Mint' : 'Mint NFT')}
+                </Button>
+              )}
+            </Stack>
           </>
         )}
 
