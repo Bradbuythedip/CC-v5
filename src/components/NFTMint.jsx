@@ -58,7 +58,9 @@ const CONTRACT_ABI = [
   "function maxSupply() view returns (uint256)",
   "function mintsPerWallet(address) view returns (uint256)",
   "function hasUsedFreeMint(address) view returns (bool)",
-  "function mintingEnabled() view returns (bool)"
+  "function mintingEnabled() view returns (bool)",
+  "function owner() view returns (address)",
+  "function setMintingEnabled(bool enabled) external"
 ];
 
 const NFTMint = () => {
@@ -233,9 +235,57 @@ const NFTMint = () => {
     }
   };
 
-  // State for transaction status
+  // State for transaction status and minting control
   const [txStatus, setTxStatus] = useState('');
   const [showRetry, setShowRetry] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isMintingEnabled, setIsMintingEnabled] = useState(false);
+
+  // Function to check if connected wallet is contract owner
+  const checkOwnership = async () => {
+    try {
+      const contract = await getContract();
+      const accounts = await getConnectedAccounts();
+      if (!accounts?.length) return false;
+
+      const owner = await contract.owner();
+      const isOwner = owner.toLowerCase() === accounts[0].toLowerCase();
+      console.log('Contract ownership:', { owner, currentAccount: accounts[0], isOwner });
+      setIsOwner(isOwner);
+      return isOwner;
+    } catch (error) {
+      console.error('Error checking ownership:', error);
+      return false;
+    }
+  };
+
+  // Function to enable/disable minting (owner only)
+  const toggleMinting = async (enable) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setTxStatus(enable ? 'Enabling minting...' : 'Disabling minting...');
+
+      const contract = await getContract();
+      if (!await checkOwnership()) {
+        throw new Error('Only the contract owner can enable/disable minting');
+      }
+
+      const tx = await contract.setMintingEnabled(enable);
+      setTxStatus('Waiting for confirmation...');
+      
+      await tx.wait();
+      console.log(`Minting has been ${enable ? 'enabled' : 'disabled'}`);
+      setTxStatus(`Minting has been ${enable ? 'enabled' : 'disabled'}`);
+      setIsMintingEnabled(enable);
+      
+    } catch (error) {
+      console.error('Failed to toggle minting:', error);
+      setError(error.message || `Failed to ${enable ? 'enable' : 'disable'} minting`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Mint function
   const mintNFT = async () => {
@@ -335,19 +385,28 @@ const NFTMint = () => {
     }
   };
 
-  // Check if we're connected to Cyprus-1
-  const checkChain = async () => {
+  // Connect to Quai network Cyprus-1 zone
+  const connectToQuaiChain = async () => {
     try {
       // First check if Pelagus is available
       if (!window.pelagus) {
         throw new Error("Please install Pelagus wallet");
       }
 
-      // Check network/zone
-      const networkInfo = await window.pelagus.request({
-        method: 'quai_getNetwork'
+      // Request connection to Quai network Cyprus-1
+      await window.pelagus.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: import.meta.env.VITE_QUAI_CHAIN_ID || '0x2328', // Cyprus-1 chain ID (9000)
+          chainName: 'Quai Network - Cyprus-1',
+          nativeCurrency: {
+            name: 'QUAI',
+            symbol: 'QUAI',
+            decimals: 18
+          },
+          rpcUrls: [import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network']
+        }]
       });
-      console.log('Network info:', networkInfo);
 
       // Get zone information
       const zoneInfo = await window.pelagus.request({
@@ -360,14 +419,20 @@ const NFTMint = () => {
         throw new Error("Please switch to Cyprus-1 zone in Pelagus");
       }
 
-      // Get accounts
+      // Request account access
       const accounts = await window.pelagus.request({
-        method: 'quai_accounts'
+        method: 'quai_requestAccounts'
       });
       console.log('Connected accounts:', accounts);
 
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts found. Please connect your wallet.");
+      }
+
+      // Verify the account is a Cyprus-1 address
+      const currentAccount = accounts[0];
+      if (!currentAccount.toLowerCase().startsWith('0x00')) {
+        throw new Error("Please use a Cyprus-1 address (starting with 0x00)");
       }
 
       return true;
@@ -400,9 +465,9 @@ const NFTMint = () => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        // Check chain first
-        const isCorrectChain = await checkChain();
-        if (!isCorrectChain) {
+        // Check chain and connect to Quai network
+        const isConnected = await connectToQuaiChain();
+        if (!isConnected) {
           setError("Please connect to Quai Network Cyprus1");
           return;
         }
@@ -418,10 +483,21 @@ const NFTMint = () => {
         if (accounts?.length) {
           setIsConnected(true);
           setAccount(accounts[0]);
+          
+          // Check ownership and minting status
+          await checkOwnership();
+          const contract = await getContract();
+          const mintingEnabled = await contract.mintingEnabled();
+          setIsMintingEnabled(mintingEnabled);
+          console.log('Minting status:', mintingEnabled);
+          
           await loadContractData();
         }
       } catch (err) {
         console.error("Connection check failed:", err);
+        if (err.code !== 4001) {
+          setError(err.message || "Failed to connect to network");
+        }
       }
     };
 
@@ -495,6 +571,39 @@ const NFTMint = () => {
         <Typography variant="body1" align="center">
           {`Total Supply: ${totalSupply} / ${maxSupply}`}
         </Typography>
+
+        {isConnected && isOwner && (
+          <Stack direction="row" spacing={2} justifyContent="center" sx={{ my: 2 }}>
+            <Button
+              variant="contained"
+              onClick={() => toggleMinting(true)}
+              disabled={loading || isMintingEnabled}
+              sx={{
+                background: 'linear-gradient(45deg, #4CAF50 30%, #45a049 90%)',
+                color: 'white',
+                '&:disabled': {
+                  background: '#cccccc'
+                }
+              }}
+            >
+              Enable Minting
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => toggleMinting(false)}
+              disabled={loading || !isMintingEnabled}
+              sx={{
+                background: 'linear-gradient(45deg, #f44336 30%, #e53935 90%)',
+                color: 'white',
+                '&:disabled': {
+                  background: '#cccccc'
+                }
+              }}
+            >
+              Disable Minting
+            </Button>
+          </Stack>
+        )}
 
         {isConnected && (
           <>
