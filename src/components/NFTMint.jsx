@@ -87,6 +87,7 @@ const NFTMint = () => {
   };
 
   // Contract helper functions for view functions with proper initialization
+  // Contract helper functions for view functions with proper initialization
   const readContract = async (functionSelector, params = [], retry = true) => {
     try {
       if (!NFT_CONTRACT_ADDRESS) {
@@ -186,36 +187,91 @@ const NFTMint = () => {
       await getProvider();
 
       const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-      if (!accounts?.length) return;
+      if (!accounts?.length) {
+        console.log('No accounts available, skipping contract data load');
+        return;
+      }
 
       const currentAccount = accounts[0];
+      console.log('Loading contract data for account:', currentAccount);
 
-      // Get all contract data in sequence to avoid race conditions
-      const totalSupplyResult = await readContract("0x18160ddd");
-      const maxSupplyResult = await readContract("0xd5abeb01");
-      const mintsResult = await readContract("0x8b7ada50", [currentAccount]);
+      // Get chain ID first
+      const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+      const isCorrectNetwork = isCyprus1Chain(chainId);
 
-      // Parse results with default values
-      const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
-      const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
-      const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      if (!isCorrectNetwork) {
+        setError('Please switch to Cyprus-1 network in Pelagus');
+        return;
+      }
 
-      console.log("Contract data loaded:", { total, max, mintsCount });
+      try {
+        // Get all contract data in sequence to avoid race conditions
+        const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
+          readContract("0x18160ddd").catch(e => {
+            console.log('Total supply read failed:', e);
+            return null;
+          }),
+          readContract("0xd5abeb01").catch(e => {
+            console.log('Max supply read failed:', e);
+            return null;
+          }),
+          readContract("0x8b7ada50", [currentAccount]).catch(e => {
+            console.log('Mints per wallet read failed:', e);
+            return null;
+          })
+        ]);
 
-      // Calculate states
-      const hasUsedFree = mintsCount > 0;
-      const canMint = mintsCount < 20;
-      const shouldBeFree = !hasUsedFree;
+        // Parse results with default values
+        const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
+        const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
+        const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
 
-      // Update all states
-      setTotalSupply(total);
-      setMaxSupply(max);
-      setHasFreeMint(shouldBeFree);
+        console.log("Contract data loaded:", { total, max, mintsCount });
+
+        // Calculate states
+        const hasUsedFree = mintsCount > 0;
+        const canMint = mintsCount < 20;
+        const shouldBeFree = !hasUsedFree;
+
+        // Update all states
+        setTotalSupply(total);
+        setMaxSupply(max);
+        setHasFreeMint(shouldBeFree);
+        setError(null); // Clear any previous errors
+
+      } catch (contractErr) {
+        console.error("Contract data load failed:", contractErr);
+        if (contractErr.code === 4001) {
+          // User rejected request - don't show error
+          console.log('User rejected contract data request');
+          return;
+        }
+        if (contractErr.message?.includes('execution reverted')) {
+          setError('Failed to read contract data. Please verify the contract is deployed on Cyprus-1.');
+        } else {
+          setError('Failed to load NFT data. Please try refreshing the page.');
+        }
+      }
 
     } catch (err) {
-      console.error("Error loading contract data:", err);
-      if (!err.code || err.code !== 4001) {
-        setError(`Error loading contract data: ${err.message}`);
+      console.error("Error in loadContractData:", err);
+      
+      // Handle specific error cases
+      if (err.code === 4001 || err.message?.includes('user rejected')) {
+        // Don't show error for user rejections
+        console.log('User rejected request - ignoring error');
+        return;
+      }
+      
+      if (err.message?.includes('network')) {
+        setError('Please connect to Cyprus-1 network in Pelagus');
+      } else if (err.message?.includes('execution reverted')) {
+        setError('Contract call failed. Please verify you are on Cyprus-1 network.');
+      } else if (err.message?.includes('initialization')) {
+        setError('Please refresh the page and try again.');
+      } else {
+        // For unexpected errors, just log and don't show to user
+        console.error('Unexpected error:', err);
       }
     }
   };
@@ -223,6 +279,26 @@ const NFTMint = () => {
   // Function to check if Pelagus is properly initialized
   const isPelagusReady = () => {
     return window.pelagus && typeof window.pelagus.request === 'function';
+  };
+
+  // Function to check if connected to Cyprus-1
+  const isCyprus1Chain = (chainId) => {
+    if (!chainId) return false;
+    
+    // Convert to lowercase if string
+    const normalizedChainId = (typeof chainId === 'string') 
+      ? chainId.toLowerCase() 
+      : chainId;
+    
+    // Convert number to hex string if needed
+    const hexChainId = (typeof normalizedChainId === 'number')
+      ? '0x' + normalizedChainId.toString(16)
+      : normalizedChainId;
+    
+    return hexChainId === '0x2328' ||  // Hex with prefix
+           hexChainId === '2328' ||    // Hex without prefix
+           normalizedChainId === '9000' || // Decimal string
+           normalizedChainId === 9000;     // Decimal number
   };
 
   useEffect(() => {
@@ -292,7 +368,7 @@ const NFTMint = () => {
           // Check if we're on the right network
           const chainId = await window.pelagus.request({ method: 'eth_chainId' });
           
-          if (chainId !== '0x2330') {
+          if (chainId !== '0x2328') {
             setError('Please switch to Cyprus-1 network in Pelagus');
             setIsConnected(false);
             setAccount(null);
@@ -334,7 +410,7 @@ const NFTMint = () => {
           try {
             const chainId = await window.pelagus.request({ method: 'eth_chainId' });
             
-            if (chainId !== '0x2330') {
+            if (chainId !== '0x2328') {
               setError('Please switch to Cyprus-1 network in Pelagus');
               setIsConnected(false);
               setAccount(null);
@@ -373,12 +449,7 @@ const NFTMint = () => {
           }
           chainId = chainId.toLowerCase();
 
-          // Enhanced chain detection
-          const isCyprus1 = 
-            chainId === '0x2328' || // Hex with prefix
-            chainId === '2328' ||   // Hex without prefix
-            chainId === '9000' ||   // Decimal representation
-            chainId === 9000;
+          const isCyprus1 = isCyprus1Chain(chainId);
 
           console.log('Chain change detection:', {
             chainId,
@@ -410,7 +481,7 @@ const NFTMint = () => {
               // Define network config
               const CYPRUS_1 = {
                 chainName: 'Cyprus-1',
-                chainId: '0x2330',
+                chainId: '0x2328',
                 nativeCurrency: {
                   name: 'QUAI',
                   symbol: 'QUAI',
@@ -645,7 +716,7 @@ const NFTMint = () => {
           const newChainId = await window.pelagus.request({ method: 'eth_chainId' });
           console.log('Current chain after switch attempt:', newChainId);
           
-          if (newChainId !== '0x2330') {
+          if (newChainId !== '0x2328') {
             console.error('Network switch verification failed');
             throw new Error('Network switch failed verification');
           }
@@ -774,7 +845,7 @@ const NFTMint = () => {
         throw new Error("Failed to verify network. Please ensure you're connected to Cyprus-1.");
       });
 
-      if (chainId !== '0x2330') {
+      if (chainId !== '0x2328') {
         throw new Error('Please switch to Cyprus-1 network in Pelagus');
       }
 
