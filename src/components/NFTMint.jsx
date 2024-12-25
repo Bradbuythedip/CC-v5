@@ -57,6 +57,13 @@ const NFTMint = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState(null);
 
+  // Setup provider and contract configuration
+  const CHAIN_CONFIG = {
+    name: 'Cyprus 1',
+    chainId: 9000,
+    url: 'https://rpc.quai.network'
+  };
+
   // Contract ABI for read functions
   const readAbi = [
     "function totalSupply() view returns (uint256)",
@@ -71,18 +78,23 @@ const NFTMint = () => {
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) return null;
 
-      // Create provider
-      const provider = new quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
-      
-      // Create contract instance
-      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, readAbi, provider);
+      // Create provider using Pelagus directly
+      const result = await window.pelagus.request({
+        method: 'quai_call',
+        params: [{
+          to: NFT_CONTRACT_ADDRESS,
+          data: quais.Interface.from(readAbi).encodeFunctionData(methodName, params),
+          from: accounts[0]
+        }, 'latest']
+      });
 
-      // Call the method
-      console.log(`Calling ${methodName} with params:`, params);
-      const result = await contract[methodName](...params);
-      console.log(`${methodName} result:`, result);
+      // Decode the result
+      const decodedResult = quais.Interface.from(readAbi).decodeFunctionResult(methodName, result);
+      console.log(`${methodName} result:`, decodedResult);
 
-      return result;
+      return Array.isArray(decodedResult) && decodedResult.length === 1 
+        ? decodedResult[0] 
+        : decodedResult;
     } catch (error) {
       console.error('Contract read error:', error);
       if (error.code === 4001) throw error;
@@ -189,22 +201,18 @@ const NFTMint = () => {
 
       // Prepare transaction
       const mintValue = hasFreeMint ? '0x0' : '0xde0b6b3a7640000'; // 0 or 1 QUAI
-      // Create provider and connect to wallet
-      const provider = new quais.JsonRpcProvider("https://rpc.quai.network/cyprus1", undefined, { usePathing: true });
-      const signer = new quais.Wallet(window.pelagus.selectedAddress, provider);
 
-      // Create contract instance with mint function
+      // Create interface for mint function
       const mintAbi = ["function mint() payable"];
-      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, mintAbi, signer);
+      const mintInterface = quais.Interface.from(mintAbi);
+      const mintData = mintInterface.encodeFunctionData('mint', []);
 
       console.log('Preparing mint transaction:', {
         from: currentAccount,
         to: NFT_CONTRACT_ADDRESS,
-        value: mintValue
+        value: mintValue,
+        data: mintData
       });
-
-      // Prepare mint transaction data
-      const mintData = contract.interface.encodeFunctionData('mint', []);
 
       // Execute mint transaction through Pelagus
       const txHash = await window.pelagus.request({
@@ -224,14 +232,32 @@ const NFTMint = () => {
 
       // Wait for transaction confirmation
       let confirmed = false;
-      while (!confirmed) {
-        const receipt = await provider.getTransactionReceipt(txHash);
-        if (receipt && receipt.blockNumber) {
-          confirmed = true;
-          console.log('Transaction confirmed in block:', receipt.blockNumber);
-        } else {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before checking again
+      let attempts = 0;
+      const maxAttempts = 30; // 1 minute max waiting time
+
+      while (!confirmed && attempts < maxAttempts) {
+        try {
+          const receipt = await window.pelagus.request({
+            method: 'quai_getTransactionReceipt',
+            params: [txHash]
+          });
+
+          if (receipt && receipt.blockNumber) {
+            confirmed = true;
+            console.log('Transaction confirmed in block:', receipt.blockNumber);
+          } else {
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before checking again
+          }
+        } catch (error) {
+          console.warn('Error checking transaction receipt:', error);
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
+      }
+
+      if (!confirmed) {
+        console.warn('Transaction not confirmed after timeout, but it might still be pending');
       }
 
       setLoading(false);
