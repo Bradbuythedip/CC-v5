@@ -220,16 +220,62 @@ const NFTMint = () => {
     }
   };
 
+  // Function to check if Pelagus is properly initialized
+  const isPelagusReady = () => {
+    return window.pelagus && typeof window.pelagus.request === 'function';
+  };
+
   useEffect(() => {
     let mounted = true;
+    let initializeTimer = null;
+    let checkCount = 0;
+
+    // Function to periodically check for Pelagus
+    const checkForPelagus = () => {
+      if (!mounted) return;
+      
+      checkCount++;
+      console.log(`Checking for Pelagus... Attempt ${checkCount}`);
+      
+      if (isPelagusReady()) {
+        console.log('Pelagus detected, initializing...');
+        clearInterval(initializeTimer);
+        init();
+      } else if (checkCount >= 20) { // Stop checking after 20 attempts
+        console.log('Stopped checking for Pelagus after 20 attempts');
+        clearInterval(initializeTimer);
+        if (mounted) {
+          setError('Please refresh the page if Pelagus is installed, or install Pelagus wallet extension');
+        }
+      }
+    };
 
     const init = async () => {
       try {
-        if (!window.pelagus) {
+        // Enhanced Pelagus detection
+        console.log('Checking Pelagus availability:', {
+          windowPelagus: !!window.pelagus,
+          isPelagusObject: window.pelagus && typeof window.pelagus === 'object',
+          hasRequest: window.pelagus && typeof window.pelagus.request === 'function',
+          methods: window.pelagus ? Object.keys(window.pelagus) : []
+        });
+
+        // Give Pelagus time to initialize
+        const maxAttempts = 10;
+        for (let i = 0; i < maxAttempts; i++) {
+          if (window.pelagus && typeof window.pelagus.request === 'function') {
+            break;
+          }
+          console.log(`Waiting for Pelagus to initialize... Attempt ${i + 1}/${maxAttempts}`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        if (!window.pelagus || typeof window.pelagus.request !== 'function') {
+          console.log('Pelagus not properly initialized after waiting');
           if (mounted) {
             setIsConnected(false);
             setAccount(null);
-            setError('Please install Pelagus wallet extension');
+            setError('Please refresh the page if Pelagus is installed, or install Pelagus wallet extension');
           }
           return;
         }
@@ -270,9 +316,17 @@ const NFTMint = () => {
       }
     };
 
-    init();
+    // Start periodic checks for Pelagus
+    if (isPelagusReady()) {
+      console.log('Pelagus already available, initializing...');
+      init();
+    } else {
+      console.log('Starting periodic checks for Pelagus...');
+      initializeTimer = setInterval(checkForPelagus, 500);
+      checkForPelagus(); // Run first check immediately
+    }
 
-    if (window.pelagus) {
+    if (isPelagusReady()) {
       const onAccountsChanged = async (accounts) => {
         if (!mounted) return;
         
@@ -452,15 +506,35 @@ const NFTMint = () => {
 
     return () => {
       mounted = false;
+      if (initializeTimer) {
+        clearInterval(initializeTimer);
+      }
     };
   }, []);
 
   const connectWallet = async () => {
     try {
-      // First check if Pelagus is available
-      if (typeof window === 'undefined' || !window.pelagus) {
+      // Enhanced Pelagus detection
+      console.log('Checking Pelagus on connect:', {
+        windowExists: typeof window !== 'undefined',
+        pelagusDefined: typeof window !== 'undefined' && !!window.pelagus,
+        hasRequest: typeof window !== 'undefined' && window.pelagus && typeof window.pelagus.request === 'function'
+      });
+
+      // Wait for Pelagus to be ready
+      const maxWaitAttempts = 5;
+      for (let i = 0; i < maxWaitAttempts; i++) {
+        if (window.pelagus && typeof window.pelagus.request === 'function') {
+          break;
+        }
+        console.log(`Waiting for Pelagus on connect... Attempt ${i + 1}/${maxWaitAttempts}`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      if (!window.pelagus || typeof window.pelagus.request !== 'function') {
+        console.log('Pelagus not available:', window.pelagus);
         window.open('https://pelagus.space/download', '_blank');
-        throw new Error("Please install Pelagus wallet");
+        throw new Error("Please refresh the page if Pelagus is installed, or install Pelagus wallet");
       }
 
       // Request account access first
