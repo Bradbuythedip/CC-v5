@@ -46,7 +46,19 @@ const requestAccounts = async () => {
 };
 
 const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
-const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
+if (!NFT_CONTRACT_ADDRESS) {
+  console.error('Contract address not configured in environment variables');
+}
+const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null && NFT_CONTRACT_ADDRESS !== undefined;
+
+// Contract ABI just for the functions we need
+const CONTRACT_ABI = [
+  "function mint() payable",
+  "function totalSupply() view returns (uint256)",
+  "function maxSupply() view returns (uint256)",
+  "function mintsPerWallet(address) view returns (uint256)",
+  "function hasUsedFreeMint(address) view returns (bool)"
+];
 
 const NFTMint = () => {
   const [loading, setLoading] = useState(false);
@@ -65,36 +77,35 @@ const NFTMint = () => {
     url: import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network'
   };
 
-  // Contract ABI for read functions
-  const readAbi = {
-    totalSupply: {
-      name: 'totalSupply',
-      type: 'function',
-      stateMutability: 'view',
-      inputs: [],
-      outputs: [{ type: 'uint256' }]
-    },
-    maxSupply: {
-      name: 'maxSupply',
-      type: 'function',
-      stateMutability: 'view',
-      inputs: [],
-      outputs: [{ type: 'uint256' }]
-    },
-    mintsPerWallet: {
-      name: 'mintsPerWallet',
-      type: 'function',
-      stateMutability: 'view',
-      inputs: [{ type: 'address' }],
-      outputs: [{ type: 'uint256' }]
-    },
-    hasUsedFreeMint: {
-      name: 'hasUsedFreeMint',
-      type: 'function',
-      stateMutability: 'view',
-      inputs: [{ type: 'address', name: 'user' }],
-      outputs: [{ type: 'bool', name: 'hasUsed' }]
+  // Function to get contract instance
+  const getContract = async () => {
+    if (!NFT_CONTRACT_ADDRESS) {
+      throw new Error('Contract address is not configured');
     }
+
+    const accounts = await getConnectedAccounts();
+    if (!accounts?.length) {
+      throw new Error('No connected account');
+    }
+
+    // Create Pelagus provider
+    const provider = new quais.JsonRpcProvider(
+      import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network',
+      Number(import.meta.env.VITE_QUAI_CHAIN_ID || '0x2328'),
+      { usePathing: true }
+    );
+
+    // Create signer
+    const signer = new quais.VoidSigner(accounts[0], provider);
+
+    // Create contract instance
+    const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    console.log('Contract instance created:', {
+      address: contract.address,
+      signer: await signer.getAddress()
+    });
+
+    return contract;
   };
 
   // Function to check contract read data
@@ -112,53 +123,15 @@ const NFTMint = () => {
       });
       console.log('Current zone:', zoneInfo);
 
-      const accounts = await getConnectedAccounts();
-      if (!accounts?.length) return null;
-
-      const functionAbi = readAbi[methodName];
-      if (!functionAbi) {
-        throw new Error(`Function ${methodName} not found in ABI`);
-      }
-
-      // Create the interface for this specific function
-      const iface = new quais.Interface([functionAbi]);
-      
-      // Encode function data
-      const data = iface.encodeFunctionData(methodName, params);
-      
+      // Get contract instance
+      const contract = await getContract();
       console.log(`Calling ${methodName} with params:`, params);
-      console.log('Encoded data:', data);
-
-      // Prepare the call parameters
-      const callParams = {
-        to: NFT_CONTRACT_ADDRESS,
-        data: data,
-        from: accounts[0]
-      };
       
-      console.log('Call parameters:', callParams);
+      // Call the contract method
+      const result = await contract[methodName](...params);
+      console.log(`${methodName} result:`, result);
 
-      // Create provider using Pelagus directly
-      const result = await window.pelagus.request({
-        method: 'quai_call',
-        params: [callParams, 'latest']
-      });
-
-      // Check if result is empty
-      if (!result || result === '0x') {
-        console.warn(`Empty result received for ${methodName}. This might indicate a revert.`);
-        throw new Error('Contract call reverted');
-      }
-
-      console.log(`Raw result for ${methodName}:`, result);
-
-      // Decode the result
-      const decodedResult = iface.decodeFunctionResult(methodName, result);
-      console.log(`${methodName} decoded result:`, decodedResult);
-
-      return Array.isArray(decodedResult) && decodedResult.length === 1 
-        ? decodedResult[0] 
-        : decodedResult;
+      return result;
     } catch (error) {
       console.error('Contract read error:', error);
       if (error.code === 4001) throw error;
@@ -271,6 +244,10 @@ const NFTMint = () => {
       setTxStatus('Initializing mint...');
       setShowRetry(false);
 
+      // Get contract instance
+      const contract = await getContract();
+      console.log('Got contract instance:', contract.address);
+
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) {
         throw new Error("Please connect your wallet first");
@@ -290,74 +267,40 @@ const NFTMint = () => {
         throw new Error('You have reached the maximum number of mints (20) per wallet');
       }
 
-      // Prepare transaction
-      const mintValue = !hasUsedFreeMint ? '0x0' : quais.parseEther('1.0').toString(); // 0 or 1 QUAI
-
-      // Create interface for mint function
-      const mintAbi = {
-        name: 'mint',
-        type: 'function',
-        stateMutability: 'payable',
-        inputs: [],
-        outputs: []
-      };
-      const mintInterface = new quais.Interface([mintAbi]);
-      const mintData = mintInterface.encodeFunctionData('mint', []);
-
-      setTxStatus('Preparing transaction...');
-      const txParams = {
-        from: currentAccount,
-        to: NFT_CONTRACT_ADDRESS,
-        value: mintValue,
-        data: mintData,
-        gasLimit: '0x2DC6C0', // 3,000,000 gas
-        maxFeePerGas: quais.parseUnits('20', 'gwei').toString(),
-        maxPriorityFeePerGas: quais.parseUnits('20', 'gwei').toString()
+      // Prepare transaction options
+      const overrides = {
+        gasLimit: "0x2DC6C0", // 3,000,000 gas
+        maxFeePerGas: quais.parseUnits('20', 'gwei'),
+        maxPriorityFeePerGas: quais.parseUnits('20', 'gwei')
       };
 
-      console.log('Preparing mint transaction:', txParams);
-
-      // Execute mint transaction through Pelagus
-      setTxStatus('Waiting for wallet confirmation...');
-      const txHash = await window.pelagus.request({
-        method: 'quai_sendTransaction',
-        params: [txParams]
-      });
-
-      console.log('Mint transaction sent:', txHash);
-
-      // Wait for transaction confirmation
-      let confirmed = false;
-      let attempts = 0;
-      const maxAttempts = 30; // 1 minute max waiting time
-
-      while (!confirmed && attempts < maxAttempts) {
-        try {
-          const receipt = await window.pelagus.request({
-            method: 'quai_getTransactionReceipt',
-            params: [txHash]
-          });
-
-          if (receipt && receipt.blockNumber) {
-            confirmed = true;
-            console.log('Transaction confirmed in block:', receipt.blockNumber);
-          } else {
-            attempts++;
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before checking again
-          }
-        } catch (error) {
-          console.warn('Error checking transaction receipt:', error);
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+      // Add value if not a free mint
+      if (hasUsedFreeMint) {
+        overrides.value = quais.parseEther('1.0');
       }
 
-      if (!confirmed) {
-        console.warn('Transaction not confirmed after timeout, but it might still be pending');
+      console.log('Preparing mint transaction with overrides:', overrides);
+
+      // Execute mint transaction through contract
+      setTxStatus('Waiting for wallet confirmation...');
+      const transaction = await contract.mint(overrides);
+
+      console.log('Mint transaction sent:', transaction.hash);
+
+      setTxStatus('Transaction submitted, waiting for confirmation...');
+      
+      // Wait for transaction confirmation
+      try {
+        const receipt = await transaction.wait();
+        console.log('Transaction confirmed in block:', receipt.blockNumber);
+        setTxStatus('Transaction confirmed!');
+      } catch (error) {
+        console.warn('Error waiting for transaction confirmation:', error);
+        setTxStatus('Transaction submitted but confirmation failed. Please check your wallet for status.');
       }
 
       setLoading(false);
-      return txHash;
+      return transaction.hash;
 
     } catch (err) {
       console.error("Error minting NFT:", err);
