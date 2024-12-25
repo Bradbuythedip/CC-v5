@@ -410,18 +410,62 @@ const NFTMint = () => {
       console.log('Mint transaction params:', mintParams);
 
       // Send transaction
-      const txHash = await window.pelagus.request({
-        method: 'eth_sendTransaction',
-        params: [mintParams]
-      }).catch(err => {
-        console.error('Transaction failed:', err);
+      console.log('Sending transaction with params:', JSON.stringify(mintParams, null, 2));
+      
+      try {
+        // First check if we have sufficient balance for gas
+        const balance = await window.pelagus.request({
+          method: 'eth_getBalance',
+          params: [currentAccount, 'latest']
+        });
+        
+        console.log('Current balance:', balance);
+        
+        // Estimate gas for the transaction
+        const gasEstimate = await window.pelagus.request({
+          method: 'eth_estimateGas',
+          params: [mintParams]
+        }).catch(err => {
+          console.error('Gas estimation failed:', err);
+          throw new Error(`Failed to estimate gas: ${err.message}. Please make sure you have enough QUAI for gas fees.`);
+        });
+        
+        console.log('Estimated gas:', gasEstimate);
+        mintParams.gas = gasEstimate;
+
+        const txHash = await window.pelagus.request({
+          method: 'eth_sendTransaction',
+          params: [mintParams]
+        });
+
+        if (!txHash) {
+          throw new Error('No transaction hash received');
+        }
+
+        console.log('Transaction sent successfully, hash:', txHash);
+        return txHash;
+
+      } catch (err) {
+        console.error('Transaction error details:', {
+          code: err.code,
+          message: err.message,
+          data: err.data,
+          stack: err.stack
+        });
+
         if (err.code === 4001) {
           throw new Error(shouldBeFree ? 
-            'Please approve the free mint transaction' : 
+            'Please approve the free mint transaction. Note that you still need QUAI for gas fees.' : 
             'Please approve the mint transaction (1 QUAI)');
         }
+        
+        // Check for insufficient funds
+        if (err.message && err.message.toLowerCase().includes('insufficient funds')) {
+          throw new Error('Insufficient funds. Please make sure you have enough QUAI for gas fees.');
+        }
+
         throw new Error(`Transaction failed: ${err.message || 'Unknown error'}`);
-      });
+      }
 
       console.log('Transaction hash:', txHash);
 
