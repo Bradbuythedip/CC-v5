@@ -50,6 +50,7 @@ const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 
 const NFTMint = () => {
   const [loading, setLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [totalSupply, setTotalSupply] = useState(0);
   const [maxSupply, setMaxSupply] = useState(420);
   const [hasFreeMint, setHasFreeMint] = useState(true);
@@ -148,22 +149,27 @@ const NFTMint = () => {
   // Connect wallet function
   const connectWallet = async () => {
     try {
+      setConnecting(true);
+      setError(null);
+
       if (!window.pelagus) {
         window.open('https://pelagus.space/download', '_blank');
         throw new Error("Please install Pelagus wallet");
       }
 
       // Check network first
+      console.log("Checking network...");
       await checkChain();
 
       // Request accounts after confirming network
+      console.log("Requesting accounts...");
       const accounts = await requestAccounts();
       
       if (accounts?.length) {
         const currentAccount = accounts[0];
         console.log('Connected to account:', currentAccount);
 
-        // Verify address format matches Cyprus-1
+        // Double check address format matches Cyprus-1
         if (!currentAccount.toLowerCase().startsWith('0x00')) {
           throw new Error("Please use a Cyprus-1 address (starting with 0x00)");
         }
@@ -171,7 +177,11 @@ const NFTMint = () => {
         setIsConnected(true);
         setAccount(currentAccount);
         setError(null);
+
+        // Load contract data
+        console.log("Loading contract data...");
         await loadContractData();
+        console.log("Contract data loaded successfully");
       }
     } catch (err) {
       console.error("Connection error:", err);
@@ -180,6 +190,8 @@ const NFTMint = () => {
       }
       setIsConnected(false);
       setAccount(null);
+    } finally {
+      setConnecting(false);
     }
   };
 
@@ -290,16 +302,27 @@ const NFTMint = () => {
         throw new Error("Please install Pelagus wallet");
       }
 
-      // Get current chain
-      const chainData = await window.pelagus.request({
-        method: 'quai_getZone'
+      // Get accounts to check address prefix
+      const accounts = await window.pelagus.request({
+        method: 'quai_accounts'
       });
 
-      console.log('Current chain data:', chainData);
+      console.log('Connected accounts:', accounts);
 
-      // Check if we're on Cyprus-1
-      const isCyprus1 = chainData && chainData.toLowerCase().includes('cyprus1');
-      if (!isCyprus1) {
+      // Verify we have a Cyprus-1 address (starts with 0x00)
+      if (!accounts || !accounts.length || !accounts[0].toLowerCase().startsWith('0x00')) {
+        throw new Error("Please connect a Cyprus-1 address (starting with 0x00) in Pelagus");
+      }
+
+      // Get chain ID
+      const chainId = await window.pelagus.request({
+        method: 'quai_chainId'
+      });
+
+      console.log('Chain ID:', chainId);
+
+      // Check if we're on Cyprus-1 (chainId 9000)
+      if (chainId !== '0x2328') { // 9000 in hex
         throw new Error("Please connect to Cyprus-1 network in Pelagus");
       }
 
@@ -352,7 +375,7 @@ const NFTMint = () => {
         }
       });
 
-      window.pelagus.on('zoneChanged', async () => {
+      window.pelagus.on('chainChanged', async () => {
         try {
           // Check if we're still on Cyprus-1
           await checkChain();
@@ -439,6 +462,7 @@ const NFTMint = () => {
           <Button
             variant="contained"
             onClick={connectWallet}
+            disabled={connecting}
             sx={{
               background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
               borderRadius: 8,
@@ -450,9 +474,19 @@ const NFTMint = () => {
               '&:hover': {
                 background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
               },
+              '&:disabled': {
+                background: 'linear-gradient(45deg, #cccccc 30%, #999999 90%)',
+              },
             }}
           >
-            Connect Wallet
+            {connecting ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={20} sx={{ color: 'white' }} />
+                <span>Connecting...</span>
+              </Stack>
+            ) : (
+              'Connect Wallet'
+            )}
           </Button>
         )}
       </Stack>
