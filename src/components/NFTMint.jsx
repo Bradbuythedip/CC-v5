@@ -321,10 +321,10 @@ const NFTMint = () => {
 
           // Enhanced chain detection
           const isCyprus1 = 
-            chainId === '0x2330' || 
-            chainId === '2330' ||
-            chainId === '9008' || // Decimal representation
-            chainId === '0x2330';
+            chainId === '0x2328' || // Hex with prefix
+            chainId === '2328' ||   // Hex without prefix
+            chainId === '9000' ||   // Decimal representation
+            chainId === 9000;
 
           console.log('Chain change detection:', {
             chainId,
@@ -396,7 +396,7 @@ const NFTMint = () => {
             } catch (err) {
               console.error('Failed to switch back to Cyprus-1:', err);
               if (err.code === 4902) {
-                setError('Please add Cyprus-1 network in Pelagus manually:\nName: Cyprus-1\nRPC URL: https://rpc.quai.network/cyprus1\nChain ID: 0x2330\nSymbol: QUAI');
+                setError('Please add Cyprus-1 network in Pelagus manually:\nName: Cyprus-1\nRPC URL: https://rpc.quai.network/cyprus1\nChain ID: 0x2328 (9000)\nSymbol: QUAI\nDecimals: 18');
               } else {
                 setError('Please switch to Cyprus-1 network in Pelagus manually');
               }
@@ -508,7 +508,7 @@ const NFTMint = () => {
       // Setup Cyprus-1 network configuration
       const CYPRUS_1 = {
         chainName: 'Cyprus-1',
-        chainId: '0x2330',
+        chainId: '0x2328', // Chain ID 9000 in hex
         nativeCurrency: {
           name: 'QUAI',
           symbol: 'QUAI',
@@ -520,10 +520,10 @@ const NFTMint = () => {
 
       // Enhanced chain detection
       const isCyprus1 = 
-        chainId.toLowerCase() === '0x2330' || 
-        chainId.toLowerCase() === '2330' ||
-        chainId === '9008' || // Decimal representation
-        chainId.toLowerCase() === '0x2330';
+        chainId.toLowerCase() === '0x2328' || // Hex with prefix
+        chainId.toLowerCase() === '2328' ||   // Hex without prefix
+        chainId === '9000' ||                 // Decimal representation
+        chainId === 9000;
 
       console.log('Chain detection:', {
         chainId,
@@ -596,7 +596,7 @@ const NFTMint = () => {
           if (error.code === 4001) {
             throw new Error('Please approve the network switch in Pelagus');
           } else if (error.code === 4902) {
-            throw new Error('Please add Cyprus-1 network in Pelagus manually:\nName: Cyprus-1\nRPC URL: https://rpc.quai.network/cyprus1\nChain ID: 0x2330\nSymbol: QUAI');
+            throw new Error('Please add Cyprus-1 network in Pelagus manually:\nName: Cyprus-1\nRPC URL: https://rpc.quai.network/cyprus1\nChain ID: 0x2328 (9000)\nSymbol: QUAI\nDecimals: 18');
           } else if (error.message?.includes('RPC')) {
             throw new Error('Unable to connect to Cyprus-1. Please check your internet connection and try again.');
           } else {
@@ -614,10 +614,10 @@ const NFTMint = () => {
         finalChainId = finalChainId.toLowerCase();
 
         const finalIsCyprus1 = 
-          finalChainId === '0x2330' || 
-          finalChainId === '2330' ||
-          finalChainId === '9008' || // Decimal representation
-          finalChainId === '0x2330';
+          finalChainId === '0x2328' || // Hex with prefix
+          finalChainId === '2328' ||   // Hex without prefix
+          finalChainId === '9000' ||   // Decimal representation
+          finalChainId === 9000;
 
         console.log('Final chain verification:', {
           chainId: finalChainId,
