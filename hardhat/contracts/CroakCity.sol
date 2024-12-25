@@ -25,7 +25,7 @@ contract CroakCity is ERC721, Ownable {
         string memory name,
         string memory symbol,
         string memory baseURI
-    ) ERC721(name, symbol) {
+    ) ERC721(name, symbol) Ownable(msg.sender) {
         _baseTokenURI = baseURI;
     }
 

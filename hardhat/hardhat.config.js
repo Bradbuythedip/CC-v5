@@ -10,12 +10,20 @@ const rpcUrl = process.env.RPC_URL;
 const chainId = Number(process.env.CHAIN_ID);
 
 module.exports = {
-  defaultNetwork: "cyprus1",
+  defaultNetwork: "hardhat",
   networks: {
+    hardhat: {
+      chainId: 1337
+    },
     cyprus1: {
-      url: rpcUrl,
+      url: "https://rpc.cyprus1.colosseum.quai.network",
       accounts: [process.env.CYPRUS1_PK],
-      chainId: chainId,
+      chainId: 9000,
+    },
+    local: {
+      url: "http://localhost:8545",
+      accounts: [process.env.CYPRUS1_PK],
+      chainId: 1337,
     }
   },
   solidity: {

@@ -1,6 +1,14 @@
-Environment Variables for Vercel:
+# Required Environment Variables for Vercel Deployment
 
-VITE_NFT_CONTRACT_ADDRESS=0x0062481f93e27cdb73ce0fa173c3251dffe40127
-VITE_QUAI_RPC_URL=https://rpc.quai.network/cyprus1
+## Contract and Network Configuration
+VITE_NFT_CONTRACT_ADDRESS=0x0062481f93e27cdb73ce0fa173c3251dffe40127  # Update with your deployed contract address
+VITE_QUAI_RPC_URL=https://rpc.cyprus1.colosseum.quai.network  # Quai Network Cyprus1 testnet RPC
+VITE_QUAI_CHAIN_ID=9000  # Quai Network Cyprus1 testnet chain ID
 
-Note: The VITE_ prefix is required for Vite to expose these variables to the frontend code.
+## Optional Configuration
+VITE_MAX_SUPPLY=420  # Maximum number of NFTs that can be minted
+VITE_MAX_PER_WALLET=20  # Maximum number of NFTs per wallet
+VITE_MINT_PRICE=1  # Price in QUAI for paid mints
+
+# Note: The VITE_ prefix is required for Vite to expose these variables to the frontend code
+# Add these variables in Vercel's project settings under Environment Variables
