@@ -1,49 +1,34 @@
 import { useState } from 'react';
-import { quais } from 'quais';
-import { initializeContract, getQuaiProvider } from '../utils/contractHelpers';
+import { useQuaiContract } from '../hooks/useQuaiContract';
 
 const MintButton = ({ account }) => {
     const [isMinting, setIsMinting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
+    const { contract, loading, error: contractError, mint } = useQuaiContract(account);
 
     const handleMint = async () => {
+        if (loading || !contract || !account) return;
+        
         setIsMinting(true);
         setError(null);
         setSuccess(false);
 
         try {
-            if (!window.pelagus || !account) {
-                throw new Error('Please connect your wallet first');
-            }
-
-            const provider = getQuaiProvider();
-            const contract = await initializeContract(provider);
-            
-            // Check if minting is enabled
-            const mintingEnabled = await contract.mintingEnabled();
-            if (!mintingEnabled) {
-                throw new Error('Minting is not enabled');
-            }
-
-            // Check if user has a free mint available
-            const hasFreeMint = await contract.hasFreeMint(account.address);
-            
-            // Prepare transaction
-            const signer = provider.getSigner();
-            const mintTx = await contract.connect(signer).mint({
-                value: hasFreeMint ? 0 : quais.parseEther('1'),
-                gasLimit: 500000 // Set a reasonable gas limit
-            });
-
-            // Wait for transaction to be mined
-            const receipt = await mintTx.wait();
+            // Attempt to mint
+            const receipt = await mint();
             console.log('Mint successful:', receipt);
             setSuccess(true);
-            
         } catch (err) {
             console.error('Error minting NFT:', err);
-            setError(err.message || 'Failed to mint NFT');
+            // Clean up the error message
+            let errorMessage = err.message || 'Failed to mint NFT';
+            if (errorMessage.includes('user rejected')) {
+                errorMessage = 'Transaction rejected by user';
+            } else if (errorMessage.includes('insufficient funds')) {
+                errorMessage = 'Insufficient QUAI balance';
+            }
+            setError(errorMessage);
         } finally {
             setIsMinting(false);
         }
