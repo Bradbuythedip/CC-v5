@@ -10,7 +10,7 @@ import {
 // Helper function to get connected accounts
 const getConnectedAccounts = async () => {
   try {
-    const accounts = await window.pelagus.request({ method: 'quai_accounts' });
+    const accounts = await window.pelagus.request({ method: 'eth_accounts' });
     console.log('Connected accounts:', accounts);
     return accounts;
   } catch (error) {
@@ -23,7 +23,7 @@ const getConnectedAccounts = async () => {
 const requestAccounts = async () => {
   try {
     const accounts = await window.pelagus.request({ 
-      method: 'quai_requestAccounts' 
+      method: 'eth_requestAccounts' 
     });
 
     console.log('Account request result:', accounts);
@@ -62,12 +62,22 @@ const NFTMint = () => {
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) return null;
 
-      const data = functionSelector + (params.length > 0 
-        ? params.map(p => p.replace('0x', '').toLowerCase().padStart(64, '0')).join('')
-        : '');
+      // Clean and format address parameters
+      const formattedParams = params.map(param => {
+        if (typeof param === 'string' && param.startsWith('0x')) {
+          // Remove 0x prefix and pad to 64 characters
+          return param.slice(2).toLowerCase().padStart(64, '0');
+        }
+        return param;
+      });
+
+      // Construct the data field
+      const data = functionSelector + formattedParams.join('');
+      console.log('Calling contract with selector:', functionSelector);
+      console.log('Encoded params:', formattedParams.join(''));
 
       const result = await window.pelagus.request({
-        method: 'quai_call',
+        method: 'eth_call',
         params: [{
           to: NFT_CONTRACT_ADDRESS,
           data,
@@ -191,14 +201,16 @@ const NFTMint = () => {
         mintValue
       });
 
-      // Execute mint transaction using Quai method
+      // Execute mint transaction
       const txHash = await window.pelagus.request({
-        method: 'quai_sendTransaction',
+        method: 'eth_sendTransaction',
         params: [{
           from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
           value: mintValue,
-          data: '0x1249c58b' // mint()
+          data: '0x1249c58b', // mint()
+          gas: '0x2DC6C0', // 3,000,000 gas
+          gasPrice: '0x4A817C800' // 20 gwei
         }]
       }).catch(error => {
         if (error.code === 4001) {
