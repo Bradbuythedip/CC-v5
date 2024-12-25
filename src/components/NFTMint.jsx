@@ -86,7 +86,7 @@ const NFTMint = () => {
     setMintAmount(newValue);
   };
 
-  // Contract helper functions
+  // Contract helper functions for view functions
   const readContract = async (functionSelector, params = []) => {
     try {
       console.log(`Calling contract with selector: ${functionSelector}`);
@@ -102,23 +102,44 @@ const NFTMint = () => {
       }
       console.log('Full call data:', data);
 
-      // Use eth_call without requiring signing
+      // Get current account if available
+      let from = null;
+      try {
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          from = accounts[0];
+        }
+      } catch (e) {
+        console.log('No account available:', e);
+      }
+
+      // Call params for view function
+      const callParams = {
+        to: NFT_CONTRACT_ADDRESS,
+        data,
+      };
+      if (from) {
+        callParams.from = from;
+      }
+
+      // Use raw RPC call to node to avoid wallet popup
       const result = await window.pelagus.request({
-        method: 'eth_call',
-        params: [{
-          to: NFT_CONTRACT_ADDRESS,
-          data,
-        }, 'latest']
+        method: 'quai_call',  // Using quai_call instead of eth_call
+        params: [callParams, 'latest']
+      }).catch(async (err) => {
+        console.log('quai_call failed, falling back to eth_call:', err);
+        // Fallback to eth_call if quai_call fails
+        return window.pelagus.request({
+          method: 'eth_call',
+          params: [callParams, 'latest']
+        });
       });
+
       console.log(`Contract call result: ${result}`);
       return result;
     } catch (error) {
       console.error('Contract call error:', error);
-      // If it's not a user rejection, propagate the error
-      if (!error.code || error.code !== 4001) {
-        throw error;
-      }
-      // Return null for user rejections to handle them gracefully
+      // For view functions, assume default values on errors
       return null;
     }
   };
@@ -140,40 +161,39 @@ const NFTMint = () => {
       const currentAccount = accounts[0];
 
       try {
-        // Try to read all contract data without requiring signing
-        console.log('Loading contract data...');
+        // Get all contract data in parallel
+        const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
+          readContract("0x18160ddd"),
+          readContract("0xd5abeb01"),
+          readContract("0x8b7ada50", [currentAccount])
+        ]);
 
-        // Get total supply
-        const totalSupplyResult = await readContract('0x18160ddd');
-        console.log('Total supply raw result:', totalSupplyResult);
+        // Parse results with default values
         const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
-        console.log('Parsed total supply:', total);
+        console.log("Total supply:", total);
 
-        // Get max supply (static value)
-        const maxSupplyResult = await readContract('0xd5abeb01');
-        console.log('Max supply raw result:', maxSupplyResult);
         const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
-        console.log('Parsed max supply:', max);
+        console.log("Max supply:", max);
 
-        // Check if user has used free mint by using mintsPerWallet
-        const mintsResult = await readContract('0x8b7ada50', [currentAccount]);
-        console.log('Mints per wallet raw result:', mintsResult);
         const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-        console.log('User has minted:', mintsCount, 'times');
-        // If mints count is 0, they haven't used their free mint
-        const hasUsedFree = mintsCount > 0;
-        console.log('Has used free mint:', hasUsedFree);
+        console.log("Current mints for wallet:", mintsCount);
 
-        // Only update state if we have valid results
-        if (totalSupplyResult !== null && maxSupplyResult !== null) {
-          console.log('Setting state with:', { total, max, hasFreeMint: !hasUsedFree });
-          setTotalSupply(total);
-          setMaxSupply(max);
-          setHasFreeMint(!hasUsedFree);
-        } else {
-          console.log('Skipping state update due to rejected calls');
-        }
-      } catch (err) {
+        // Calculate states
+        const hasUsedFree = mintsCount > 0;
+        const canMint = mintsCount < 20;
+        const shouldBeFree = !hasUsedFree;
+
+        console.log("Mint status:", {
+          hasUsedFree,
+          canMint,
+          shouldBeFree,
+          mintsCount
+        });
+
+        // Update all states
+        setTotalSupply(total);
+        setMaxSupply(max);
+        setHasFreeMint(shouldBeFree);
         console.error('Error reading contract:', err);
         throw new Error('Failed to read contract data');
       }
