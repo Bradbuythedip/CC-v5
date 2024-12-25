@@ -76,8 +76,9 @@ const NFTMint = () => {
   // Setup provider and contract configuration
   const CHAIN_CONFIG = {
     name: 'Cyprus 1',
-    chainId: Number(import.meta.env.VITE_QUAI_CHAIN_ID || 9000),
-    url: import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network'
+    chainId: 9000, // Cyprus-1 chain ID (not hex)
+    url: import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network',
+    networkId: 9000
   };
 
   // Function to get contract instance
@@ -93,8 +94,8 @@ const NFTMint = () => {
 
     // Create Pelagus provider
     const provider = new quais.JsonRpcProvider(
-      import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network',
-      Number(import.meta.env.VITE_QUAI_CHAIN_ID || '0x2328'),
+      CHAIN_CONFIG.url,
+      CHAIN_CONFIG.chainId,
       { usePathing: true }
     );
 
@@ -393,20 +394,22 @@ const NFTMint = () => {
         throw new Error("Please install Pelagus wallet");
       }
 
-      // Request connection to Quai network Cyprus-1
-      await window.pelagus.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-          chainId: import.meta.env.VITE_QUAI_CHAIN_ID || '0x2328', // Cyprus-1 chain ID (9000)
-          chainName: 'Quai Network - Cyprus-1',
-          nativeCurrency: {
-            name: 'QUAI',
-            symbol: 'QUAI',
-            decimals: 18
-          },
-          rpcUrls: [import.meta.env.VITE_QUAI_RPC_URL || 'https://rpc.quai.network']
-        }]
+      // Get network information
+      const networkInfo = await window.pelagus.request({
+        method: 'quai_getNetwork'
       });
+      console.log('Current network:', networkInfo);
+
+      // Check network ID
+      const expectedChainId = '9000'; // Cyprus-1 chain ID
+      if (networkInfo?.chainId !== expectedChainId) {
+        console.log('Wrong network, requesting switch...');
+        // Request switch to Cyprus-1
+        await window.pelagus.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: expectedChainId }]
+        });
+      }
 
       // Get zone information
       const zoneInfo = await window.pelagus.request({
@@ -465,37 +468,68 @@ const NFTMint = () => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        // Check chain and connect to Quai network
-        const isConnected = await connectToQuaiChain();
-        if (!isConnected) {
-          setError("Please connect to Quai Network Cyprus1");
+        // Check if Pelagus is available
+        if (!window.pelagus) {
+          setError("Please install Pelagus wallet");
           return;
         }
 
-        // Verify contract exists
-        const isContractValid = await verifyContractAddress();
-        if (!isContractValid) {
-          setError("Contract not found on this network");
+        // Request accounts
+        const accounts = await window.pelagus.request({
+          method: 'quai_requestAccounts'
+        });
+
+        if (!accounts || accounts.length === 0) {
+          setError("Please connect your wallet");
           return;
         }
 
-        const accounts = await getConnectedAccounts();
-        if (accounts?.length) {
-          setIsConnected(true);
-          setAccount(accounts[0]);
-          
-          // Check ownership and minting status
-          await checkOwnership();
+        // Get current network
+        const networkInfo = await window.pelagus.request({
+          method: 'quai_getNetwork'
+        });
+        console.log('Current network:', networkInfo);
+
+        // Verify we're on Cyprus-1
+        if (networkInfo?.chainId !== '9000') {
+          setError("Please switch to Cyprus-1 network in Pelagus");
+          return;
+        }
+
+        // Get zone information
+        const zoneInfo = await window.pelagus.request({
+          method: 'quai_getZone'
+        });
+        console.log('Current zone:', zoneInfo);
+
+        if (!zoneInfo?.toLowerCase().includes('cyprus')) {
+          setError("Please switch to Cyprus-1 zone in Pelagus");
+          return;
+        }
+
+        // Update connection state
+        setIsConnected(true);
+        setAccount(accounts[0]);
+        setError(null);
+
+        // Initialize contract
+        try {
           const contract = await getContract();
           const mintingEnabled = await contract.mintingEnabled();
           setIsMintingEnabled(mintingEnabled);
           console.log('Minting status:', mintingEnabled);
-          
+
+          await checkOwnership();
           await loadContractData();
+        } catch (contractError) {
+          console.error('Contract initialization error:', contractError);
+          setError('Failed to initialize contract. Please check your connection.');
         }
       } catch (err) {
         console.error("Connection check failed:", err);
-        if (err.code !== 4001) {
+        if (err.code === 4001) {
+          setError("Please authorize wallet connection");
+        } else {
           setError(err.message || "Failed to connect to network");
         }
       }
