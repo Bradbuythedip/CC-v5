@@ -70,7 +70,8 @@ const NFTMint = () => {
     "function totalSupply() view returns (uint256)",
     "function maxSupply() view returns (uint256)",
     "function mintsPerWallet(address) view returns (uint256)",
-    "function hasUsedFreeMint(address) view returns (bool)"
+    "function hasUsedFreeMint(address) view returns (bool)",
+    "function hasFreeMint(address) view returns (bool)"
   ];
 
   // Function to check contract read data
@@ -118,11 +119,11 @@ const NFTMint = () => {
       }
 
       // Get contract data
-      const [totalSupply, maxSupply, mintsPerWallet, hasNotUsedFreeMint] = await Promise.all([
+      const [totalSupply, maxSupply, mintsPerWallet, hasFreeMintAvailable] = await Promise.all([
         readContract("totalSupply"),
         readContract("maxSupply"),
         readContract("mintsPerWallet", [accounts[0]]),
-        readContract("hasFreeMint", [accounts[0]])
+        readContract("hasUsedFreeMint", [accounts[0]])
       ]);
 
       // Convert BigNumber to number if needed
@@ -135,7 +136,7 @@ const NFTMint = () => {
       // Update state
       setTotalSupply(total);
       setMaxSupply(max);
-      setHasFreeMint(hasNotUsedFreeMint);
+      setHasFreeMint(!hasFreeMintAvailable);
       setError(null);
 
     } catch (err) {
@@ -211,7 +212,7 @@ const NFTMint = () => {
       console.log('Minting with account:', currentAccount);
 
       // Check current mints
-      const [currentMints, hasFreeMint] = await Promise.all([
+      const [currentMints, hasUsedFreeMint] = await Promise.all([
         readContract('mintsPerWallet', [currentAccount]),
         readContract('hasUsedFreeMint', [currentAccount])
       ]);
@@ -222,7 +223,7 @@ const NFTMint = () => {
       }
 
       // Prepare transaction
-      const mintValue = hasFreeMint ? '0x0' : quais.parseEther('1.0').toString(); // 0 or 1 QUAI
+      const mintValue = !hasUsedFreeMint ? '0x0' : quais.parseEther('1.0').toString(); // 0 or 1 QUAI
 
       // Create interface for mint function
       const mintAbi = ["function mint() payable"];
