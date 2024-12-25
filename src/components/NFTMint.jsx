@@ -93,10 +93,13 @@ const NFTMint = () => {
     }
 
     try {
-      const provider = await getProvider();
-      
-      // Get the signer's address
-      const accounts = await provider.request({ method: 'eth_accounts' });
+      // First check if we're already connected
+      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+      if (!accounts || accounts.length === 0) {
+        // Don't show an error, just return silently as we're not connected yet
+        return;
+      }
+
       const currentAccount = accounts[0];
 
       // Create a contract instance
@@ -151,17 +154,27 @@ const NFTMint = () => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        if (typeof window !== 'undefined' && window.pelagus) {
-          const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-          const isConnected = accounts.length > 0;
-          setIsConnected(isConnected);
-          if (isConnected) {
-            setAccount(accounts[0]);
-            await loadContractData();
-          }
+        if (typeof window === 'undefined' || !window.pelagus) {
+          return;
+        }
+
+        // Just check eth_accounts without prompting
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        const isConnected = accounts.length > 0;
+        setIsConnected(isConnected);
+        
+        if (isConnected) {
+          setAccount(accounts[0]);
+          // Only load contract data if we have an account
+          await loadContractData();
+        } else {
+          setAccount(null);
         }
       } catch (err) {
         console.error("Error checking connection:", err);
+        // Don't show error to user, just log it
+        setIsConnected(false);
+        setAccount(null);
       }
     };
 
@@ -177,9 +190,32 @@ const NFTMint = () => {
         } else {
           setIsConnected(false);
           setAccount(null);
+          setError(null); // Clear any previous errors
         }
       });
+
+      // Listen for chain changes
+      window.pelagus.on('chainChanged', () => {
+        // Reload the page on chain change as recommended by Pelagus
+        window.location.reload();
+      });
+
+      // Listen for disconnect
+      window.pelagus.on('disconnect', () => {
+        setIsConnected(false);
+        setAccount(null);
+        setError(null);
+      });
     }
+
+    // Cleanup listeners
+    return () => {
+      if (window.pelagus) {
+        window.pelagus.removeListener('accountsChanged', () => {});
+        window.pelagus.removeListener('chainChanged', () => {});
+        window.pelagus.removeListener('disconnect', () => {});
+      }
+    };
   }, []);
 
   const connectWallet = async () => {
@@ -191,25 +227,32 @@ const NFTMint = () => {
         return;
       }
       
-      if (typeof window !== 'undefined' && window.pelagus) {
+      if (typeof window === 'undefined' || !window.pelagus) {
+        window.open('https://pelagus.space/download', '_blank');
+        throw new Error("Please install Pelagus wallet");
+      }
+
+      try {
         // Request account access
-        await window.pelagus.request({ method: 'eth_requestAccounts' });
-        
-        // Get accounts
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
           setIsConnected(true);
           setAccount(accounts[0]);
           // Load contract data after successful connection
           await loadContractData();
         }
-      } else {
-        window.open('https://pelagus.space/download', '_blank');
-        throw new Error("Please install Pelagus wallet");
+      } catch (err) {
+        if (err.code === 4001) {
+          // User rejected the connection request
+          throw new Error("Please approve the connection request in Pelagus");
+        }
+        throw err;
       }
     } catch (err) {
       console.error("Error connecting wallet:", err);
       setError(err.message || "Error connecting wallet");
+      setIsConnected(false);
+      setAccount(null);
     }
   };
 
