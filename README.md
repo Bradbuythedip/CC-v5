@@ -43,7 +43,7 @@ frontend/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Bradbuythedip/croakcityv2.git
+git clone 
 cd croakcityv2/frontend
 ```
 
