@@ -66,13 +66,36 @@ const NFTMint = () => {
   };
 
   // Contract ABI for read functions
-  const readAbi = [
-    "function totalSupply() view returns (uint256)",
-    "function maxSupply() view returns (uint256)",
-    "function mintsPerWallet(address) view returns (uint256)",
-    "function hasUsedFreeMint(address) view returns (bool)",
-    "function hasFreeMint(address) view returns (bool)"
-  ];
+  const readAbi = {
+    totalSupply: {
+      name: 'totalSupply',
+      type: 'function',
+      stateMutability: 'view',
+      inputs: [],
+      outputs: [{ type: 'uint256' }]
+    },
+    maxSupply: {
+      name: 'maxSupply',
+      type: 'function',
+      stateMutability: 'view',
+      inputs: [],
+      outputs: [{ type: 'uint256' }]
+    },
+    mintsPerWallet: {
+      name: 'mintsPerWallet',
+      type: 'function',
+      stateMutability: 'view',
+      inputs: [{ type: 'address' }],
+      outputs: [{ type: 'uint256' }]
+    },
+    hasUsedFreeMint: {
+      name: 'hasUsedFreeMint',
+      type: 'function',
+      stateMutability: 'view',
+      inputs: [{ type: 'address' }],
+      outputs: [{ type: 'bool' }]
+    }
+  };
 
   // Function to check contract read data
   const readContract = async (methodName, params = []) => {
@@ -80,19 +103,40 @@ const NFTMint = () => {
       const accounts = await getConnectedAccounts();
       if (!accounts?.length) return null;
 
+      const functionAbi = readAbi[methodName];
+      if (!functionAbi) {
+        throw new Error(`Function ${methodName} not found in ABI`);
+      }
+
+      // Create the interface for this specific function
+      const iface = new quais.Interface([functionAbi]);
+      
+      // Encode function data
+      const data = iface.encodeFunctionData(methodName, params);
+      
+      console.log(`Calling ${methodName} with params:`, params);
+      console.log('Encoded data:', data);
+
       // Create provider using Pelagus directly
       const result = await window.pelagus.request({
         method: 'quai_call',
         params: [{
           to: NFT_CONTRACT_ADDRESS,
-          data: quais.Interface.from(readAbi).encodeFunctionData(methodName, params),
+          data: data,
           from: accounts[0]
         }, 'latest']
       });
 
+      console.log(`Raw result for ${methodName}:`, result);
+
+      if (!result) {
+        console.warn(`No result returned for ${methodName}`);
+        return null;
+      }
+
       // Decode the result
-      const decodedResult = quais.Interface.from(readAbi).decodeFunctionResult(methodName, result);
-      console.log(`${methodName} result:`, decodedResult);
+      const decodedResult = iface.decodeFunctionResult(methodName, result);
+      console.log(`${methodName} decoded result:`, decodedResult);
 
       return Array.isArray(decodedResult) && decodedResult.length === 1 
         ? decodedResult[0] 
@@ -226,8 +270,14 @@ const NFTMint = () => {
       const mintValue = !hasUsedFreeMint ? '0x0' : quais.parseEther('1.0').toString(); // 0 or 1 QUAI
 
       // Create interface for mint function
-      const mintAbi = ["function mint() payable"];
-      const mintInterface = quais.Interface.from(mintAbi);
+      const mintAbi = {
+        name: 'mint',
+        type: 'function',
+        stateMutability: 'payable',
+        inputs: [],
+        outputs: []
+      };
+      const mintInterface = new quais.Interface([mintAbi]);
       const mintData = mintInterface.encodeFunctionData('mint', []);
 
       console.log('Preparing mint transaction:', {
@@ -238,6 +288,7 @@ const NFTMint = () => {
       });
 
       // Execute mint transaction through Pelagus
+      console.log('Sending transaction...');
       const txHash = await window.pelagus.request({
         method: 'quai_sendTransaction',
         params: [{
@@ -245,9 +296,9 @@ const NFTMint = () => {
           to: NFT_CONTRACT_ADDRESS,
           value: mintValue,
           data: mintData,
-          gas: '0x2DC6C0', // 3,000,000 gas
-          maxFeePerGas: '0x4A817C800', // 20 gwei
-          maxPriorityFeePerGas: '0x4A817C800' // 20 gwei
+          gasLimit: '0x2DC6C0', // 3,000,000 gas
+          maxFeePerGas: quais.parseUnits('20', 'gwei').toString(),
+          maxPriorityFeePerGas: quais.parseUnits('20', 'gwei').toString()
         }]
       });
 
