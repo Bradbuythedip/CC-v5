@@ -45,6 +45,16 @@ const requestAccounts = async () => {
   }
 };
 
+// Log environment variables for debugging
+console.log('Environment Debug Info:', {
+  NFT_ADDRESS: import.meta.env.VITE_NFT_CONTRACT_ADDRESS,
+  RPC_URL: import.meta.env.VITE_QUAI_RPC_URL,
+  CHAIN_ID: import.meta.env.VITE_QUAI_CHAIN_ID,
+  MODE: import.meta.env.MODE,
+  DEV: import.meta.env.DEV,
+  ALL_ENV: import.meta.env
+});
+
 const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
 if (!NFT_CONTRACT_ADDRESS) {
   console.error('Contract address not configured in environment variables');

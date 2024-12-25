@@ -40,5 +40,10 @@
     "env": {
       "NPM_FLAGS": "--legacy-peer-deps"
     }
+  },
+  "env": {
+    "VITE_NFT_CONTRACT_ADDRESS": "0x0062481f93e27cdb73ce0fa173c3251dffe40127",
+    "VITE_QUAI_RPC_URL": "https://rpc.quai.network",
+    "VITE_QUAI_CHAIN_ID": "9000"
   }
 }

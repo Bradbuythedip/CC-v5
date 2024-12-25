@@ -10,6 +10,16 @@ import Trending from './components/Trending';
 import FearAndGreed from './components/FearAndGreed';
 import theme from './theme';
 
+// Log environment variables for debugging
+console.log('Environment Debug Info:', {
+  NFT_ADDRESS: import.meta.env.VITE_NFT_CONTRACT_ADDRESS,
+  RPC_URL: import.meta.env.VITE_QUAI_RPC_URL,
+  CHAIN_ID: import.meta.env.VITE_QUAI_CHAIN_ID,
+  MODE: import.meta.env.MODE,
+  DEV: import.meta.env.DEV,
+  ALL_ENV: import.meta.env
+});
+
 function App() {
   return (
     <Router>
