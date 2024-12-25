@@ -467,27 +467,39 @@ const NFTMint = () => {
         const balanceInWei = BigInt(balance);
         console.log('Current balance (wei):', balanceInWei.toString());
 
-        // Create base transaction parameters for gas estimation
-        const baseParams = {
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          data: '0x1249c58b', // mint()
-          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000' // 0 or 1 QUAI
-        };
-
-        // Get gas price
+        // Get gas price first
         const gasPrice = await window.pelagus.request({
           method: 'eth_gasPrice',
           params: []
         });
-        console.log('Gas price:', gasPrice);
+        console.log('Current gas price:', gasPrice);
+
+        // Create base parameters for estimation
+        const baseParams = {
+          from: currentAccount,
+          to: NFT_CONTRACT_ADDRESS,
+          data: '0x1249c58b', // mint()
+          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+          gasPrice: gasPrice // Include gas price for more accurate estimation
+        };
+
+        // Log the transaction we're going to estimate
+        console.log('Estimating gas for transaction:', {
+          ...baseParams,
+          shouldBeFree,
+          gasPriceGwei: BigInt(gasPrice) / BigInt(1e9)
+        });
 
         // Estimate gas with complete parameters
         const gasEstimate = await window.pelagus.request({
           method: 'eth_estimateGas',
           params: [baseParams]
+        }).catch(error => {
+          console.error('Gas estimation failed:', error);
+          // Use a higher default for safety
+          return '0x2DC6C0'; // 3,000,000 gas
         });
-        console.log('Gas estimate:', gasEstimate);
+        console.log('Gas estimate:', gasEstimate, '(', parseInt(gasEstimate, 16), ' units)');
 
         // Calculate total cost
         const gasCost = BigInt(gasEstimate) * BigInt(gasPrice);
@@ -511,16 +523,30 @@ const NFTMint = () => {
           );
         }
 
+        // Add 10% to gas estimate for safety
+        const safeGasEstimate = BigInt(gasEstimate) * BigInt(11) / BigInt(10);
+        
         // Prepare final transaction parameters
         const mintParams = {
-          ...baseParams,
-          gas: gasEstimate,
-          gasPrice: gasPrice
+          from: currentAccount,
+          to: NFT_CONTRACT_ADDRESS,
+          data: '0x1249c58b', // mint()
+          value: shouldBeFree ? '0x0' : '0xDE0B6B3A7640000', // 0 or 1 QUAI
+          gasPrice: gasPrice,
+          gas: '0x' + safeGasEstimate.toString(16) // Convert back to hex with 10% buffer
         };
 
-        console.log('Final transaction params:', JSON.stringify(mintParams, null, 2));
+        // Log details for debugging
+        console.log('Final transaction parameters:', {
+          ...mintParams,
+          shouldBeFree,
+          estimatedGasCost: (BigInt(gasEstimate) * BigInt(gasPrice) / BigInt(1e18)).toString() + ' QUAI',
+          totalValue: shouldBeFree ? '0' : '1 QUAI',
+          gasLimit: parseInt(mintParams.gas, 16).toString() + ' units'
+        });
 
         // Send the transaction
+        console.log('Sending transaction...');
         const txHash = await window.pelagus.request({
           method: 'eth_sendTransaction',
           params: [mintParams]
@@ -534,73 +560,42 @@ const NFTMint = () => {
         return txHash;
 
       } catch (err) {
-        console.error('Transaction error details:', err);
-        
-        // Handle user rejection
-        if (err.code === 4001) {
-          throw new Error(
-            shouldBeFree
-              ? `Transaction rejected. Note: You only need to pay gas fees (approximately 0.0012 QUAI).`
-              : `Transaction rejected. Note: You need 1 QUAI plus gas fees (approximately 0.0012 QUAI).`
-          );
-        }
-        
-        // Handle insufficient balance specifically
-        if (err.message.includes('insufficient') || err.message.toLowerCase().includes('balance')) {
-          throw new Error(
-            shouldBeFree
-              ? `Insufficient balance. You need approximately 0.0012 QUAI for gas fees.`
-              : `Insufficient balance. You need 1 QUAI plus approximately 0.0012 QUAI for gas fees.`
-          );
-        }
-        
-        // Pass through any other errors with full details
-        console.error('Unexpected error:', {
-          message: err.message,
+        // Log the complete error for debugging
+        console.error('Transaction error details:', {
           code: err.code,
+          message: err.message,
+          data: err.data,
           stack: err.stack
         });
-        throw err;
-      }
-
-      // Wait for confirmation with timeout
-      console.log('Waiting for transaction confirmation...');
-      let confirmed = false;
-      let attempts = 0;
-      const maxAttempts = 30; // 30 seconds timeout
-
-      while (!confirmed && attempts < maxAttempts) {
-        try {
-          const receipt = await window.pelagus.request({
-            method: 'eth_getTransactionReceipt',
-            params: [txHash]
-          });
-
-          if (receipt) {
-            // Check if transaction was successful
-            if (receipt.status === '0x1') {
-              confirmed = true;
-              console.log('Transaction confirmed successfully:', receipt);
-            } else {
-              throw new Error('Transaction failed on the blockchain');
-            }
-          } else {
-            console.log(`Waiting for confirmation... (${attempts + 1}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            attempts++;
-          }
-        } catch (err) {
-          if (err.message === 'Transaction failed on the blockchain') {
-            throw err;
-          }
-          console.log('Error checking receipt, retrying...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          attempts++;
+        
+        // Calculate actual gas cost in QUAI for better error messages
+        const estimatedGasCost = gasCost ? (gasCost / BigInt(1e18)).toString() : '0.0012';
+        
+        if (err.code === 4001) {
+          // User rejected the transaction
+          const message = shouldBeFree
+            ? `Please note: This is a free mint - you only need to pay gas fees (approximately ${estimatedGasCost} QUAI).`
+            : `Please note: The mint costs 1 QUAI plus gas fees (approximately ${estimatedGasCost} QUAI).`;
+            
+          throw new Error(`Transaction cancelled. ${message} Please try again.`);
         }
-      }
-
-      if (!confirmed) {
-        throw new Error('Transaction confirmation timed out. Please check your wallet for status.');
+        
+        if (err.message && err.message.toLowerCase().includes('insufficient')) {
+          // Insufficient balance error
+          const requiredTotal = shouldBeFree 
+            ? estimatedGasCost
+            : (BigInt(1e18) + gasCost) / BigInt(1e18);
+            
+          throw new Error(
+            `Insufficient balance. You need ${requiredTotal} QUAI ${shouldBeFree ? 'for gas fees' : 'total (1 QUAI + gas fees)'}.`
+          );
+        }
+        
+        // For other errors, provide context about the attempted operation
+        throw new Error(
+          `Failed to ${shouldBeFree ? 'process free mint' : 'mint NFT'}: ${err.message || 'Unknown error'}. ` +
+          'Please ensure you have enough QUAI and are connected to Cyprus-1 network.'
+        );
       }
 
       // Refresh data
