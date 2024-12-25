@@ -10,7 +10,7 @@ import {
 // Helper function to get connected accounts
 const getConnectedAccounts = async () => {
   try {
-    const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+    const accounts = await window.pelagus.request({ method: 'quai_accounts' });
     console.log('Connected accounts:', accounts);
     return accounts;
   } catch (error) {
@@ -23,7 +23,7 @@ const getConnectedAccounts = async () => {
 const requestAccounts = async () => {
   try {
     const accounts = await window.pelagus.request({ 
-      method: 'eth_requestAccounts' 
+      method: 'quai_requestAccounts' 
     });
 
     console.log('Account request result:', accounts);
@@ -77,7 +77,7 @@ const NFTMint = () => {
       console.log('Encoded params:', formattedParams.join(''));
 
       const result = await window.pelagus.request({
-        method: 'eth_call',
+        method: 'quai_call',
         params: [{
           to: NFT_CONTRACT_ADDRESS,
           data,
@@ -203,14 +203,15 @@ const NFTMint = () => {
 
       // Execute mint transaction
       const txHash = await window.pelagus.request({
-        method: 'eth_sendTransaction',
+        method: 'quai_sendTransaction',
         params: [{
           from: currentAccount,
           to: NFT_CONTRACT_ADDRESS,
           value: mintValue,
           data: '0x1249c58b', // mint()
           gas: '0x2DC6C0', // 3,000,000 gas
-          gasPrice: '0x4A817C800' // 20 gwei
+          maxFeePerGas: '0x4A817C800', // 20 gwei
+          maxPriorityFeePerGas: '0x4A817C800' // 20 gwei
         }]
       }).catch(error => {
         if (error.code === 4001) {
@@ -234,10 +235,31 @@ const NFTMint = () => {
     }
   };
 
+  // Check if we're on the correct chain
+  const checkChain = async () => {
+    try {
+      const chainId = await window.pelagus.request({
+        method: 'quai_chainId'
+      });
+      const expectedChainId = '0x2328'; // 9000 in hex
+      return chainId === expectedChainId;
+    } catch (error) {
+      console.error('Failed to get chain ID:', error);
+      return false;
+    }
+  };
+
   // Initialize connection check
   useEffect(() => {
     const checkConnection = async () => {
       try {
+        // Check chain first
+        const isCorrectChain = await checkChain();
+        if (!isCorrectChain) {
+          setError("Please connect to Quai Network Cyprus1");
+          return;
+        }
+
         const accounts = await getConnectedAccounts();
         if (accounts?.length) {
           setIsConnected(true);
@@ -269,8 +291,21 @@ const NFTMint = () => {
         }
       });
 
-      window.pelagus.on('chainChanged', () => {
-        window.location.reload();
+      window.pelagus.on('chainChanged', async (chainId) => {
+        const isCorrectChain = chainId === '0x2328'; // 9000 in hex
+        if (!isCorrectChain) {
+          setError("Please connect to Quai Network Cyprus1");
+          setIsConnected(false);
+          setAccount(null);
+        } else {
+          setError(null);
+          const accounts = await getConnectedAccounts();
+          if (accounts?.length) {
+            setIsConnected(true);
+            setAccount(accounts[0]);
+            await loadContractData();
+          }
+        }
       });
 
       window.pelagus.on('disconnect', () => {
