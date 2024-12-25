@@ -234,14 +234,31 @@ const NFTMint = () => {
           return;
         }
 
-        // Initialize provider
-        await getProvider();
+        // Check for connected accounts without prompting
+        const accounts = await window.pelagus.request({ 
+          method: 'eth_accounts' 
+        }).catch(err => {
+          console.log('eth_accounts request failed:', err);
+          return [];
+        });
 
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
         if (mounted && accounts?.length) {
+          // Check if we're on the right network
+          const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+          
+          if (chainId !== '0x2330') {
+            setError('Please switch to Cyprus-1 network in Pelagus');
+            setIsConnected(false);
+            setAccount(null);
+            return;
+          }
+
           setIsConnected(true);
           setAccount(accounts[0]);
-          await loadContractData();
+          setError(null);
+          await loadContractData().catch(err => {
+            console.error('Failed to load initial contract data:', err);
+          });
         }
       } catch (err) {
         console.error('Initialization error:', err);
@@ -258,25 +275,66 @@ const NFTMint = () => {
     if (window.pelagus) {
       const onAccountsChanged = async (accounts) => {
         if (!mounted) return;
+        
         if (accounts?.length) {
-          setIsConnected(true);
-          setAccount(accounts[0]);
-          await loadContractData();
+          try {
+            const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+            
+            if (chainId !== '0x2330') {
+              setError('Please switch to Cyprus-1 network in Pelagus');
+              setIsConnected(false);
+              setAccount(null);
+              return;
+            }
+
+            setIsConnected(true);
+            setAccount(accounts[0]);
+            setError(null);
+            await loadContractData().catch(err => {
+              console.error('Failed to load contract data on account change:', err);
+            });
+          } catch (err) {
+            console.error('Error checking chain on account change:', err);
+            setError('Failed to verify network. Please ensure you are on Cyprus-1');
+            setIsConnected(false);
+            setAccount(null);
+          }
         } else {
           setIsConnected(false);
           setAccount(null);
+          setError('Please connect your wallet');
         }
       };
 
-      const onChainChanged = () => {
-        if (mounted) window.location.reload();
+      const onChainChanged = async (chainId) => {
+        if (!mounted) return;
+        
+        console.log('Chain changed to:', chainId);
+        
+        if (chainId !== '0x2330') {
+          setError('Please switch to Cyprus-1 network in Pelagus');
+          setIsConnected(false);
+          setAccount(null);
+          return;
+        }
+
+        // Reload contract data if we're connected and on the right chain
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        if (accounts?.length) {
+          setIsConnected(true);
+          setAccount(accounts[0]);
+          setError(null);
+          await loadContractData().catch(err => {
+            console.error('Failed to load contract data on chain change:', err);
+          });
+        }
       };
 
       const onDisconnect = () => {
         if (mounted) {
           setIsConnected(false);
           setAccount(null);
-          setError(null);
+          setError('Wallet disconnected');
         }
       };
 
@@ -299,24 +357,82 @@ const NFTMint = () => {
 
   const connectWallet = async () => {
     try {
-      // Initialize provider first
-      const provider = await getProvider();
-      if (!provider) {
-        throw new Error("Failed to initialize wallet connection");
+      // First check if Pelagus is available
+      if (typeof window === 'undefined' || !window.pelagus) {
+        window.open('https://pelagus.space/download', '_blank');
+        throw new Error("Please install Pelagus wallet");
       }
 
-      const chainId = await provider.request({ method: 'eth_chainId' });
+      // Request account access first
+      const accounts = await window.pelagus.request({ 
+        method: 'eth_requestAccounts' 
+      }).catch(err => {
+        if (err.code === 4001) {
+          throw new Error("Please approve the connection request in Pelagus");
+        }
+        throw err;
+      });
+
+      if (!accounts?.length) {
+        throw new Error("No accounts found. Please unlock Pelagus");
+      }
+
+      // After connection, check the chain ID
+      const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+      console.log('Connected to chain:', chainId);
+
+      // Cyprus-1 chainId is 0x2330
       if (chainId !== '0x2330') {
-        throw new Error('Please connect to Cyprus-1 network in Pelagus');
+        // Try to switch to Cyprus-1
+        try {
+          await window.pelagus.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2330' }],
+          });
+          console.log('Successfully switched to Cyprus-1');
+        } catch (switchError) {
+          // This error code indicates that the chain has not been added to Pelagus
+          if (switchError.code === 4902) {
+            try {
+              await window.pelagus.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x2330',
+                  chainName: 'Cyprus-1',
+                  nativeCurrency: {
+                    name: 'QUAI',
+                    symbol: 'QUAI',
+                    decimals: 18
+                  },
+                  rpcUrls: ['https://rpc.cyprus1.colosseum.quai.network'],
+                  blockExplorerUrls: ['https://cyprus1.colosseum.quaiscan.io']
+                }],
+              });
+            } catch (addError) {
+              throw new Error('Please add and switch to Cyprus-1 network in Pelagus manually');
+            }
+          } else {
+            throw new Error('Please switch to Cyprus-1 network in Pelagus manually');
+          }
+        }
       }
 
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      if (accounts?.length) {
-        setIsConnected(true);
-        setAccount(accounts[0]);
-        setError(null);
-        await loadContractData();
+      // Verify the switch was successful
+      const finalChainId = await window.pelagus.request({ method: 'eth_chainId' });
+      if (finalChainId !== '0x2330') {
+        throw new Error('Failed to switch to Cyprus-1 network. Please try again.');
       }
+
+      // Set connected state
+      setIsConnected(true);
+      setAccount(accounts[0]);
+      setError(null);
+
+      // Load contract data
+      await loadContractData().catch(err => {
+        console.error('Failed to load initial contract data:', err);
+      });
+
     } catch (err) {
       console.error("Error connecting wallet:", err);
       setError(err.message || "Error connecting wallet");
