@@ -413,25 +413,30 @@ const NFTMint = () => {
       console.log('Sending transaction with params:', JSON.stringify(mintParams, null, 2));
       
       try {
-        // First check if we have sufficient balance for gas
+        // Set a reasonable default gas limit for minting
+        mintParams.gas = '0x1D4C0'; // 120,000 gas units
+        
+        // Check balance without requiring approval
         const balance = await window.pelagus.request({
           method: 'eth_getBalance',
           params: [currentAccount, 'latest']
-        });
-        
-        console.log('Current balance:', balance);
-        
-        // Estimate gas for the transaction
-        const gasEstimate = await window.pelagus.request({
-          method: 'eth_estimateGas',
-          params: [mintParams]
         }).catch(err => {
-          console.error('Gas estimation failed:', err);
-          throw new Error(`Failed to estimate gas: ${err.message}. Please make sure you have enough QUAI for gas fees.`);
+          console.warn('Balance check failed:', err);
+          // Continue even if balance check fails
+          return null;
         });
         
-        console.log('Estimated gas:', gasEstimate);
-        mintParams.gas = gasEstimate;
+        if (balance) {
+          const balanceInWei = parseInt(balance, 16);
+          console.log('Current balance (wei):', balanceInWei);
+          
+          // Calculate minimum required balance for gas (gas limit * assumed max gas price)
+          const minRequired = BigInt('120000') * BigInt('10000000000'); // 120k gas * 10 gwei
+          
+          if (BigInt(balanceInWei) < minRequired) {
+            throw new Error(`Insufficient balance for gas fees. You need at least 0.0012 QUAI for gas.`);
+          }
+        }
 
         const txHash = await window.pelagus.request({
           method: 'eth_sendTransaction',
@@ -453,18 +458,36 @@ const NFTMint = () => {
           stack: err.stack
         });
 
+        // User rejected transaction
         if (err.code === 4001) {
-          throw new Error(shouldBeFree ? 
-            'Please approve the free mint transaction. Note that you still need QUAI for gas fees.' : 
-            'Please approve the mint transaction (1 QUAI)');
+          throw new Error(
+            shouldBeFree ? 
+            'Transaction cancelled. To mint for free, you only need to pay gas fees (approximately 0.0012 QUAI).' : 
+            'Transaction cancelled. To mint, you need 1 QUAI plus gas fees (approximately 0.0012 QUAI).'
+          );
         }
         
-        // Check for insufficient funds
-        if (err.message && err.message.toLowerCase().includes('insufficient funds')) {
-          throw new Error('Insufficient funds. Please make sure you have enough QUAI for gas fees.');
+        // Insufficient funds
+        if (err.message && (
+          err.message.toLowerCase().includes('insufficient funds') ||
+          err.message.toLowerCase().includes('insufficient balance')
+        )) {
+          const required = shouldBeFree ? '0.0012' : '1.0012';
+          throw new Error(
+            `Insufficient balance. You need approximately ${required} QUAI in your wallet.`
+          );
         }
 
-        throw new Error(`Transaction failed: ${err.message || 'Unknown error'}`);
+        // Network error
+        if (err.message && err.message.toLowerCase().includes('network')) {
+          throw new Error('Network error. Please check your connection to Pelagus and try again.');
+        }
+
+        // Generic error with more context
+        throw new Error(
+          `Transaction failed: ${err.message || 'Unknown error'}. ` +
+          'Make sure you have enough QUAI and are connected to the correct network.'
+        );
       }
 
       console.log('Transaction hash:', txHash);
