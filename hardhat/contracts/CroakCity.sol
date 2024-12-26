@@ -41,9 +41,20 @@ contract CroakCity is ERC721, Ownable {
     }
 
     function mint() external payable {
-        require(mintingEnabled, "Minting is not enabled");
-        require(_tokenIds.current() < MAX_SUPPLY, "All tokens have been minted");
-        require(mintsPerWallet[msg.sender] < MAX_PER_WALLET, "Max mints per wallet reached");
+        // Check minting status
+        if (!mintingEnabled) {
+            revert("MINTING_DISABLED");
+        }
+        
+        // Check supply
+        if (_tokenIds.current() >= MAX_SUPPLY) {
+            revert("MAX_SUPPLY_REACHED");
+        }
+        
+        // Check wallet limit
+        if (mintsPerWallet[msg.sender] >= MAX_PER_WALLET) {
+            revert("WALLET_LIMIT_REACHED");
+        }
         
         bool isFreeMint = !hasUsedFreeMint[msg.sender];
         
@@ -51,18 +62,27 @@ contract CroakCity is ERC721, Ownable {
         if (isFreeMint) {
             hasUsedFreeMint[msg.sender] = true;
         } else {
-            require(msg.value >= MINT_PRICE, "Incorrect payment amount");
+            if (msg.value < MINT_PRICE) {
+                revert("INSUFFICIENT_PAYMENT");
+            }
+            
             (bool success, ) = treasury.call{value: msg.value}("");
-            require(success, "Payment transfer failed");
+            if (!success) {
+                revert("PAYMENT_FAILED");
+            }
         }
 
-        // Mint token
-        _tokenIds.increment();
-        uint256 tokenId = _tokenIds.current();
-        mintsPerWallet[msg.sender]++;
-        _safeMint(msg.sender, tokenId);
-
-        emit NFTMinted(msg.sender, tokenId, isFreeMint);
+        try {
+            // Mint token
+            _tokenIds.increment();
+            uint256 tokenId = _tokenIds.current();
+            mintsPerWallet[msg.sender]++;
+            _safeMint(msg.sender, tokenId);
+            
+            emit NFTMinted(msg.sender, tokenId, isFreeMint);
+        } catch {
+            revert("MINT_FAILED");
+        }
     }
 
     function totalSupply() public view returns (uint256) {

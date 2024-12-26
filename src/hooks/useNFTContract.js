@@ -122,21 +122,39 @@ export function useNFTContract(signer, provider, account) {
     } catch (error) {
       console.error('Mint error:', error);
       
-      // Handle specific contract revert reasons
-      if (error.message.includes('Minting is not enabled')) {
-        throw new Error('Minting is currently disabled');
-      } else if (error.message.includes('All tokens have been minted')) {
-        throw new Error('All NFTs have been minted');
-      } else if (error.message.includes('Max mints per wallet reached')) {
-        throw new Error('You have reached your maximum mint limit');
-      } else if (error.message.includes('Incorrect payment amount')) {
-        throw new Error('Incorrect payment amount. Please send 1 QUAI');
-      } else if (error.message.includes('Payment transfer failed')) {
-        throw new Error('Payment transfer failed. Please try again');
-      } else {
-        // If we can't determine the specific error, throw a generic one
-        throw new Error('Transaction failed. Please check your wallet and try again');
+      let errorMessage = 'Transaction failed. Please try again.';
+      
+      if (error.code === 4001) {
+        errorMessage = 'You rejected the transaction';
+      } else if (error.data) {
+        try {
+          // Try to decode the error data
+          const decodedError = quais.utils.toUtf8String(error.data);
+          
+          // Map contract error codes to user-friendly messages
+          const errorMessages = {
+            'MINTING_DISABLED': 'Minting is currently disabled',
+            'MAX_SUPPLY_REACHED': 'All NFTs have been minted',
+            'WALLET_LIMIT_REACHED': 'You have reached your maximum mint limit (20)',
+            'INSUFFICIENT_PAYMENT': 'Please send 1 QUAI to mint',
+            'PAYMENT_FAILED': 'Payment transfer failed. Please try again',
+            'MINT_FAILED': 'NFT minting failed. Please try again'
+          };
+          
+          errorMessage = errorMessages[decodedError] || `Error: ${decodedError}`;
+        } catch (decodeError) {
+          console.error('Error decoding revert reason:', decodeError);
+          
+          // Check if error message contains any known strings
+          if (error.message?.includes('insufficient funds')) {
+            errorMessage = 'Insufficient funds in your wallet';
+          } else if (error.message?.includes('gas required exceeds allowance')) {
+            errorMessage = 'Transaction might fail - please try again with higher gas limit';
+          }
+        }
       }
+      
+      throw new Error(errorMessage);
     }
   };
 
