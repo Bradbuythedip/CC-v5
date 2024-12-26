@@ -7,6 +7,18 @@ const detectPelagus = () => {
   return window.pelagus !== undefined && window.pelagus !== null;
 };
 
+// Helper function to check chain
+const checkChain = async (provider) => {
+  try {
+    if (!provider) return false;
+    const network = await provider.getNetwork();
+    return network?.chainId.toString() === '9000'; // Cyprus-1 chain ID
+  } catch (error) {
+    console.error('Chain check error:', error);
+    return false;
+  }
+};
+
 // Helper function to get zone from address
 const getAddressInfo = (address) => {
   try {
@@ -84,19 +96,15 @@ export function useQuaiProvider() {
         chainId: parseInt(CHAIN_CONFIG.chainId)
       });
 
-      // Get network to verify connection
-      try {
-        const network = await quaiProvider.getNetwork();
-        console.log('Connected to network:', network);
-        
-        if (network.chainId.toString() !== CHAIN_CONFIG.chainId) {
-          throw new Error(`Please connect to ${CHAIN_CONFIG.name}`);
-        }
-      } catch (networkError) {
-        console.error('Network error:', networkError);
-        throw new Error('Failed to connect to network');
+      // Verify chain connection
+      console.log('Verifying chain connection...');
+      const isCorrectChain = await checkChain(quaiProvider);
+      if (!isCorrectChain) {
+        console.error('Wrong chain detected');
+        throw new Error(`Please connect to ${CHAIN_CONFIG.name}`);
       }
 
+      console.log('Chain verification successful');
       setProvider(quaiProvider);
       setAccount(currentAccount);
 
@@ -195,9 +203,19 @@ export function useQuaiProvider() {
       const addressInfo = getAddressInfo(accounts[0]);
       console.log('New account info:', addressInfo);
 
+      // Verify both address zone and chain
       if (addressInfo.isCyprus && accounts[0] !== account) {
-        console.log('Valid Cyprus-1 account - reconnecting');
-        await connectWallet();
+        console.log('Valid Cyprus-1 address - checking chain...');
+        const isCorrectChain = provider ? await checkChain(provider) : false;
+        
+        if (isCorrectChain) {
+          console.log('Chain verification successful - reconnecting');
+          await connectWallet();
+        } else {
+          console.log('Wrong chain detected - disconnecting');
+          setAccount(null);
+          setSigner(null);
+        }
       } else {
         console.log('Invalid account - disconnecting');
         setAccount(null);
