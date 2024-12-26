@@ -12,6 +12,8 @@ import {
 import { useQuaiProvider } from '../hooks/useQuaiProvider';
 import { useNFTContract } from '../hooks/useNFTContract';
 
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
+
 export default function NFTMint() {
   const [minting, setMinting] = useState(false);
   const [txError, setTxError] = useState(null);
