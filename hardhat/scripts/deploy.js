@@ -1,103 +1,75 @@
 const hre = require("hardhat");
-const ethers = require('ethers');
-const fs = require('fs');
-const path = require('path');
+
+// Verification will be done manually since the explorer is not standard etherscan
+async function verifyContract(address, constructorArguments) {
+  console.log("\nContract verification info:");
+  console.log("---------------------------");
+  console.log("Address:", address);
+  console.log("Constructor arguments:", constructorArguments);
+  console.log("\nVerify with:");
+  console.log(`npx hardhat verify --network cyprus1 ${address} "${constructorArguments.join('" "')}"`);
+}
 
 async function main() {
-  console.log("Starting deployment process...");
-
   try {
-    // Setup provider and wallet
-    const provider = new ethers.JsonRpcProvider("https://rpc.quai.network/cyprus1");
-    const privateKey = process.env.PRIVATE_KEY;
+    const [deployer] = await hre.ethers.getSigners();
+    console.log("Deploying contracts with the account:", deployer.address);
+
+    const treasuryAddress = process.env.TREASURY_ADDRESS || deployer.address;
+    console.log("Treasury address:", treasuryAddress);
+
+    // Deploy CroakCity
+    console.log("\nDeploying CroakCity contract...");
+    const CroakCity = await hre.ethers.getContractFactory("CroakCity");
     
-    // Create a custom provider that enforces lowercase addresses
-    const customProvider = new Proxy(provider, {
-      get(target, prop) {
-        const value = target[prop];
-        if (prop === 'formatter') {
-          return {
-            ...value,
-            address: (value) => value.toLowerCase()
-          };
-        }
-        return value;
-      }
-    });
+    const constructorArgs = [
+      "Croak City",                                // name
+      "CROAK",                                     // symbol
+      "https://api.croakcity.xyz/metadata/",       // baseURI
+      treasuryAddress                              // treasury
+    ];
+
+    const croakCity = await CroakCity.deploy(...constructorArgs);
+    await croakCity.waitForDeployment();
+    const contractAddress = await croakCity.getAddress();
     
-    const wallet = new ethers.Wallet(privateKey, customProvider);
-    const address = wallet.address.toLowerCase();
-    console.log("Using address:", address);
+    console.log("CroakCity deployed to:", contractAddress);
 
-    // Get contract artifacts
-    const contractPath = path.join(__dirname, "../artifacts/contracts/CroakCity.sol/CroakCity.json");
-    const contractJson = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
-    
-    // Get balance
-    const balance = await customProvider.getBalance(address);
-    console.log("Account balance:", ethers.formatEther(balance), "QUAI");
+    // Verify minting is enabled
+    console.log("\nVerifying minting status...");
+    const mintingEnabled = await croakCity.mintingEnabled();
+    console.log("Minting enabled:", mintingEnabled);
 
-    // Create contract factory
-    console.log("Creating contract factory...");
-    const factory = new ethers.ContractFactory(
-      contractJson.abi,
-      contractJson.bytecode,
-      wallet
-    );
+    // If minting is not enabled, enable it
+    if (!mintingEnabled) {
+      console.log("Enabling minting...");
+      const tx = await croakCity.setMintingEnabled(true);
+      await tx.wait();
+      console.log("Minting has been enabled");
+    }
 
-    // Prepare deployment
-    console.log("Preparing deployment...");
-    const deploymentTx = await factory.getDeployTransaction(
-      "Croak City",
-      "CROAK",
-      "https://gateway.ipfs.io/ipfs/"
-    );
+    // Print deployment summary
+    console.log("\nDeployment Summary:");
+    console.log("--------------------");
+    console.log("Contract Address:", contractAddress);
+    console.log("Treasury Address:", treasuryAddress);
+    console.log("Minting Enabled:", await croakCity.mintingEnabled());
+    console.log("Max Supply:", await croakCity.maxSupply());
+    console.log("Mint Price:", hre.ethers.formatEther(await croakCity.MINT_PRICE()), "QUAI");
 
-    // Get nonce
-    const nonce = await customProvider.getTransactionCount(address);
-    console.log("Using nonce:", nonce);
-
-    // Set parameters
-    const tx = {
-      ...deploymentTx,
-      nonce: nonce,
-      gasPrice: ethers.parseUnits("20", "gwei"),
-      gasLimit: ethers.toBigInt("3000000"),
-      chainId: 9000
-    };
-
-    // Send transaction
-    console.log("Sending deployment transaction...");
-    const transaction = await wallet.sendTransaction(tx);
-    console.log("Transaction hash:", transaction.hash);
-
-    // Wait for transaction
-    console.log("Waiting for deployment transaction...");
-    const receipt = await transaction.wait();
-    console.log("Contract deployed to:", receipt.contractAddress.toLowerCase());
-
-    console.log(`
-Contract Details:
-----------------
-Name: Croak City
-Symbol: CROAK
-Address: ${receipt.contractAddress.toLowerCase()}
-Mint Price: 1 QUAI
-Transaction Hash: ${transaction.hash}
-    `);
+    // Print verification info
+    await verifyContract(contractAddress, constructorArgs);
 
   } catch (error) {
-    console.error("Deployment failed with error:", error);
-    if (error.transaction) {
-      console.log("Failed transaction:", error.transaction);
-    }
-    process.exitCode = 1;
+    console.error("Deployment failed:", error);
+    process.exit(1);
   }
 }
 
+// Execute deployment
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("Unhandled error:", error);
+    console.error(error);
     process.exit(1);
   });

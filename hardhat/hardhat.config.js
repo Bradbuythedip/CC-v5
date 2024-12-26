@@ -1,33 +1,31 @@
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-
 require("@nomicfoundation/hardhat-toolbox");
+require('quai-hardhat-plugin');
 const dotenv = require("dotenv");
 dotenv.config({ path: "../.env" });
 
-const rpcUrl = process.env.RPC_URL;
-const chainId = Number(process.env.CHAIN_ID);
+const rpcUrl = process.env.RPC_URL || "https://rpc.quai.network";
+const chainId = Number(process.env.CHAIN_ID || "9000");
+const privateKey = process.env.CYPRUS1_PK;
 
+if (!privateKey) {
+  console.warn("⚠️ No CYPRUS1_PK found in .env file");
+}
+
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
 module.exports = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "cyprus1",
   networks: {
-    hardhat: {
-      chainId: 1337
-    },
     cyprus1: {
-      url: "https://rpc.cyprus1.colosseum.quai.network",
-      accounts: [process.env.CYPRUS1_PK],
-      chainId: 9000,
-    },
-    local: {
-      url: "http://localhost:8545",
-      accounts: [process.env.CYPRUS1_PK],
-      chainId: 1337,
+      url: rpcUrl,
+      chainId: chainId,
+      accounts: privateKey ? [privateKey] : [],
+      timeout: 60000, // 60 seconds
     }
   },
   solidity: {
-    version: "0.8.20",
+    version: "0.8.19",
     settings: {
       optimizer: {
         enabled: true,
@@ -35,4 +33,13 @@ module.exports = {
       },
     },
   },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
+  mocha: {
+    timeout: 40000
+  }
 };

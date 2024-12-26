@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract CroakCity is ERC721, Ownable {
     using Strings for uint256;
+    using Counters for Counters.Counter;
 
     uint256 public constant MAX_SUPPLY = 420;
     uint256 public constant MAX_PER_WALLET = 20;
     uint256 public constant MINT_PRICE = 1 ether; // 1 QUAI
     
     string private _baseTokenURI;
-    uint256 private _currentTokenId;
+    Counters.Counter private _tokenIds;
+    address public immutable treasury;
     bool public mintingEnabled;
     
     // Mapping to track free mints per wallet
@@ -21,36 +24,49 @@ contract CroakCity is ERC721, Ownable {
     // Mapping to track total mints per wallet
     mapping(address => uint256) public mintsPerWallet;
 
+    event MintEnabled(bool enabled);
+    event BaseURIChanged(string baseURI);
+    event NFTMinted(address indexed to, uint256 indexed tokenId, bool wasFreeMint);
+
     constructor(
         string memory name,
         string memory symbol,
-        string memory baseURI
-    ) ERC721(name, symbol) Ownable(msg.sender) {
+        string memory baseURI,
+        address _treasury
+    ) ERC721(name, symbol) {
+        require(_treasury != address(0), "Invalid treasury address");
         _baseTokenURI = baseURI;
+        treasury = _treasury;
+        mintingEnabled = true; // Enable minting by default
     }
 
     function mint() external payable {
         require(mintingEnabled, "Minting is not enabled");
-        require(_currentTokenId < MAX_SUPPLY, "All tokens have been minted");
+        require(_tokenIds.current() < MAX_SUPPLY, "All tokens have been minted");
         require(mintsPerWallet[msg.sender] < MAX_PER_WALLET, "Max mints per wallet reached");
         
-        // Check if it's a free mint
-        if (!hasUsedFreeMint[msg.sender]) {
+        bool isFreeMint = !hasUsedFreeMint[msg.sender];
+        
+        // Handle payment
+        if (isFreeMint) {
             hasUsedFreeMint[msg.sender] = true;
         } else {
             require(msg.value >= MINT_PRICE, "Incorrect payment amount");
-            // Forward payment directly to treasury
-            (bool success, ) = TREASURY.call{value: msg.value}("");
+            (bool success, ) = treasury.call{value: msg.value}("");
             require(success, "Payment transfer failed");
         }
 
-        _currentTokenId++;
+        // Mint token
+        _tokenIds.increment();
+        uint256 tokenId = _tokenIds.current();
         mintsPerWallet[msg.sender]++;
-        _safeMint(msg.sender, _currentTokenId);
+        _safeMint(msg.sender, tokenId);
+
+        emit NFTMinted(msg.sender, tokenId, isFreeMint);
     }
 
     function totalSupply() public view returns (uint256) {
-        return _currentTokenId;
+        return _tokenIds.current();
     }
 
     function maxSupply() public pure returns (uint256) {
@@ -67,17 +83,17 @@ contract CroakCity is ERC721, Ownable {
 
     function setBaseURI(string memory baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
+        emit BaseURIChanged(baseURI);
     }
-
-    address public constant TREASURY = 0x001Eb937e54b93EeF35E765c5074e8e643D3887E;
 
     function setMintingEnabled(bool enabled) external onlyOwner {
         mintingEnabled = enabled;
+        emit MintEnabled(enabled);
     }
 
     function withdrawBalance() external onlyOwner {
         uint256 balance = address(this).balance;
-        (bool success, ) = TREASURY.call{value: balance}("");
+        (bool success, ) = treasury.call{value: balance}("");
         require(success, "Transfer failed");
     }
 }

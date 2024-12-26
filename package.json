@@ -43,5 +43,10 @@
   },
   "overrides": {
     "ethers": "^5.7.2"
-  }
+  },
+  "description": "Welcome to Croak City - A unique NFT collection featuring 420 distinctive frog characters on the QUAI Network.",
+  "main": "vite.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
