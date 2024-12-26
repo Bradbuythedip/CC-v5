@@ -54,73 +54,87 @@ export function useQuaiProvider() {
       setError(null);
 
       console.log('Checking for Pelagus wallet...');
-      const isPelagus = detectPelagus();
-      setIsPelagusDetected(isPelagus);
-
-      if (!isPelagus) {
+      if (!window.pelagus) {
         window.open('https://pelagus.space/download', '_blank');
         throw new Error('Please install Pelagus wallet');
       }
 
-      console.log('Pelagus detected, requesting accounts...');
+      console.log('Requesting accounts from Pelagus...');
       let accounts;
       try {
         accounts = await window.pelagus.request({
           method: 'quai_requestAccounts'
         });
-      } catch (accountError) {
-        console.error('Account request error:', accountError);
-        if (accountError.code === 4001) {
+        console.log('Accounts received:', accounts);
+      } catch (error) {
+        console.error('Account request error:', error);
+        if (error.code === 4001) {
           throw new Error('You rejected the connection request');
         }
-        throw new Error('Failed to get accounts');
+        throw new Error(error.message || 'Failed to get accounts');
       }
 
       if (!accounts?.length) {
         throw new Error('No accounts found');
       }
 
-      console.log('Accounts received:', accounts);
       const currentAccount = accounts[0];
-      const addressInfo = getAddressInfo(currentAccount);
-      
-      console.log('Address info:', addressInfo);
-      if (!addressInfo.isCyprus) {
-        throw new Error('Please switch to a Cyprus-1 address (starting with 0x00)');
-      }
+      console.log('Selected account:', currentAccount);
 
-      // Setup provider
-      console.log('Setting up provider...');
-      const quaiProvider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl, {
-        name: CHAIN_CONFIG.name,
-        chainId: parseInt(CHAIN_CONFIG.chainId)
-      });
+      // Verify account zone
+      try {
+        const zone = await window.pelagus.request({
+          method: 'quai_getZone'
+        });
+        console.log('Current zone:', zone);
 
-      // Verify chain connection
-      console.log('Verifying chain connection...');
-      const isCorrectChain = await checkChain(quaiProvider);
-      if (!isCorrectChain) {
-        console.error('Wrong chain detected');
-        throw new Error(`Please connect to ${CHAIN_CONFIG.name}`);
-      }
-
-      console.log('Chain verification successful');
-      setProvider(quaiProvider);
-      setAccount(currentAccount);
-
-      // Setup signer if needed for transactions
-      if (window.pelagus.getSigner) {
-        try {
-          const quaiSigner = await window.pelagus.getSigner();
-          setSigner(quaiSigner);
-          console.log('Signer setup complete');
-        } catch (signerError) {
-          console.error('Signer setup error:', signerError);
-          // Don't throw here - we can still proceed with read-only operations
+        if (!zone?.toLowerCase().includes('cyprus')) {
+          throw new Error('Please switch to Cyprus-1 zone in Pelagus');
         }
+      } catch (error) {
+        console.error('Zone check error:', error);
+        throw new Error('Failed to verify zone. Please make sure you are on Cyprus-1');
       }
 
-      return true;
+      // Setup provider using Pelagus
+      console.log('Setting up provider with Pelagus...');
+      try {
+        // First check network
+        const network = await window.pelagus.request({
+          method: 'quai_getNetwork'
+        });
+        console.log('Network info:', network);
+
+        if (network?.chainId !== CHAIN_CONFIG.chainId) {
+          await window.pelagus.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: CHAIN_CONFIG.chainId }]
+          });
+        }
+
+        // Create provider
+        const quaiProvider = new quais.Web3Provider(window.pelagus, {
+          name: CHAIN_CONFIG.name,
+          chainId: parseInt(CHAIN_CONFIG.chainId)
+        });
+
+        // Get signer
+        const quaiSigner = quaiProvider.getSigner();
+        
+        setProvider(quaiProvider);
+        setSigner(quaiSigner);
+        setAccount(currentAccount);
+
+        console.log('Wallet connection complete');
+        return true;
+
+      } catch (error) {
+        console.error('Provider setup error:', error);
+        if (error.code === 4001) {
+          throw new Error('You rejected the network switch request');
+        }
+        throw new Error(error.message || 'Failed to setup wallet connection');
+      }
 
       } catch (networkError) {
         console.error('Network setup error:', networkError);
@@ -168,25 +182,46 @@ export function useQuaiProvider() {
     setIsPelagusDetected(detectPelagus());
   }, []);
 
-  // Handle existing connection and events
+  // Handle Pelagus connection and events
   useEffect(() => {
-    if (!isPelagusDetected) return;
+    if (!window.pelagus) return;
 
     const checkConnection = async () => {
       try {
-        const accounts = await window.pelagus.request({ method: 'quai_accounts' });
+        // First check if we have permission to access accounts
+        const accounts = await window.pelagus.request({
+          method: 'quai_accounts'
+        });
         console.log('Checking existing connection:', accounts);
         
         if (accounts?.length) {
-          const addressInfo = getAddressInfo(accounts[0]);
-          if (addressInfo.isCyprus) {
-            connectWallet();
+          // Verify zone
+          const zone = await window.pelagus.request({
+            method: 'quai_getZone'
+          });
+          console.log('Current zone:', zone);
+
+          if (zone?.toLowerCase().includes('cyprus')) {
+            // Verify network
+            const network = await window.pelagus.request({
+              method: 'quai_getNetwork'
+            });
+            console.log('Current network:', network);
+
+            if (network?.chainId === CHAIN_CONFIG.chainId) {
+              await connectWallet();
+            } else {
+              console.log('Wrong network - not connecting');
+            }
           } else {
-            console.log('Existing account is not on Cyprus-1');
+            console.log('Not on Cyprus-1 zone - not connecting');
           }
         }
       } catch (error) {
-        console.error('Error checking existing connection:', error);
+        console.error('Error checking connection:', error);
+        if (error.code !== 4001) {  // Don't log user rejections
+          console.dir(error);
+        }
       }
     };
 
@@ -197,50 +232,87 @@ export function useQuaiProvider() {
         console.log('No accounts - disconnecting');
         setAccount(null);
         setSigner(null);
+        setProvider(null);
         return;
       }
 
-      const addressInfo = getAddressInfo(accounts[0]);
-      console.log('New account info:', addressInfo);
+      try {
+        // Check zone when accounts change
+        const zone = await window.pelagus.request({
+          method: 'quai_getZone'
+        });
+        console.log('Zone for new account:', zone);
 
-      // Verify both address zone and chain
-      if (addressInfo.isCyprus && accounts[0] !== account) {
-        console.log('Valid Cyprus-1 address - checking chain...');
-        const isCorrectChain = provider ? await checkChain(provider) : false;
-        
-        if (isCorrectChain) {
-          console.log('Chain verification successful - reconnecting');
-          await connectWallet();
+        if (zone?.toLowerCase().includes('cyprus')) {
+          // Check network
+          const network = await window.pelagus.request({
+            method: 'quai_getNetwork'
+          });
+          console.log('Network for new account:', network);
+
+          if (network?.chainId === CHAIN_CONFIG.chainId && accounts[0] !== account) {
+            console.log('Valid account on correct network - reconnecting');
+            await connectWallet();
+          } else {
+            console.log('Wrong network - disconnecting');
+            setAccount(null);
+            setSigner(null);
+            setProvider(null);
+          }
         } else {
-          console.log('Wrong chain detected - disconnecting');
+          console.log('Not on Cyprus-1 zone - disconnecting');
           setAccount(null);
           setSigner(null);
+          setProvider(null);
         }
-      } else {
-        console.log('Invalid account - disconnecting');
+      } catch (error) {
+        console.error('Error handling account change:', error);
         setAccount(null);
         setSigner(null);
+        setProvider(null);
       }
     };
 
-    const handleChainChanged = () => {
-      console.log('Chain changed - reloading page');
-      window.location.reload();
+    const handleChainChanged = async (chainId) => {
+      console.log('Chain changed:', chainId);
+      try {
+        if (chainId === CHAIN_CONFIG.chainId) {
+          const zone = await window.pelagus.request({
+            method: 'quai_getZone'
+          });
+          if (zone?.toLowerCase().includes('cyprus')) {
+            console.log('Correct chain and zone - reconnecting');
+            await connectWallet();
+            return;
+          }
+        }
+        console.log('Invalid chain or zone - disconnecting');
+        setAccount(null);
+        setSigner(null);
+        setProvider(null);
+      } catch (error) {
+        console.error('Error handling chain change:', error);
+        setAccount(null);
+        setSigner(null);
+        setProvider(null);
+      }
     };
-
-    // Check for existing connection
-    checkConnection();
 
     // Setup event listeners
     window.pelagus.on('accountsChanged', handleAccountsChanged);
     window.pelagus.on('chainChanged', handleChainChanged);
 
-    // Cleanup
+    // Check for existing connection
+    checkConnection();
+
+    // Cleanup listeners
     return () => {
-      window.pelagus.removeListener('accountsChanged', handleAccountsChanged);
-      window.pelagus.removeListener('chainChanged', handleChainChanged);
+      if (window.pelagus) {
+        window.pelagus.removeListener('accountsChanged', handleAccountsChanged);
+        window.pelagus.removeListener('chainChanged', handleChainChanged);
+      }
     };
-  }, [isPelagusDetected, account]);
+  }, [account]);
 
   return {
     provider,
