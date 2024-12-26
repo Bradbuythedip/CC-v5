@@ -19,6 +19,81 @@ const checkChain = async (provider) => {
   }
 };
 
+// Helper function to handle errors
+const handleError = (error, context = '') => {
+  // Start a new console group for this error
+  console.group(`Error in ${context}`);
+  console.error('Error object:', error);
+  console.log('Error type:', typeof error);
+  
+  // Log error properties if it's an object
+  if (error && typeof error === 'object') {
+    console.log('Error properties:', Object.keys(error));
+    console.log('Error structure:', {
+      code: error?.code,
+      message: error?.message,
+      data: error?.data,
+      error: error?.error,
+      reason: error?.reason
+    });
+  }
+  
+  // Helper function to extract error message
+  const getMessage = () => {
+    // Handle null/undefined
+    if (!error) return 'Unknown error occurred';
+    
+    // Handle string errors
+    if (typeof error === 'string') return error;
+    
+    // Handle Error instances
+    if (error instanceof Error) return error.message;
+    
+    // Handle objects
+    if (typeof error === 'object') {
+      // Check for user rejection
+      if (error.code === 4001) return 'You rejected the request';
+      
+      // Check for nested error
+      if (error.error?.message) return error.error.message;
+      
+      // Check for standard message
+      if (error.message) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('user rejected')) return 'You rejected the request';
+        if (msg.includes('network')) return 'Network connection failed';
+        return error.message;
+      }
+      
+      // Check for error data
+      if (error.data) {
+        try {
+          return quais.utils.toUtf8String(error.data);
+        } catch (e) {
+          console.error('Error decoding data:', e);
+        }
+      }
+      
+      // Check for reason
+      if (error.reason) return error.reason;
+      
+      // Try toString if it's meaningful
+      if (typeof error.toString === 'function') {
+        const str = error.toString();
+        if (str !== '[object Object]') return str;
+      }
+    }
+    
+    return 'An unexpected error occurred';
+  };
+  
+  const message = getMessage();
+  console.log('Final error message:', message);
+  console.groupEnd();
+  
+  return message;
+};
+
 // Helper function to get zone from address
 const getAddressInfo = (address) => {
   try {
@@ -142,27 +217,7 @@ export function useQuaiProvider() {
       }
 
     } catch (err) {
-      console.error('Wallet connection error:', err);
-      console.dir(err); // Detailed error logging
-      
-      // Handle different error types
-      let errorMessage = 'Failed to connect wallet';
-      
-      if (err?.code === 4001) {
-        errorMessage = 'You rejected the connection request';
-      } else if (err?.message) {
-        errorMessage = err.message;
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      } else if (err?.data) {
-        try {
-          const decodedError = quais.utils.toUtf8String(err.data);
-          errorMessage = decodedError;
-        } catch (decodeError) {
-          console.error('Error decoding data:', decodeError);
-        }
-      }
-      
+      const errorMessage = handleError(err, 'Wallet Connection');
       setError(errorMessage);
       return false;
     } finally {
@@ -217,61 +272,97 @@ export function useQuaiProvider() {
     };
 
     const handleAccountsChanged = async (accounts) => {
-      console.log('Accounts changed:', accounts);
+      console.group('Account Change Event');
+      console.log('New accounts:', accounts);
+      console.log('Current account:', account);
       
-      if (!accounts.length) {
-        console.log('No accounts - disconnecting');
-        setAccount(null);
-        setSigner(null);
-        setProvider(null);
-        return;
-      }
+      try {
+        if (!accounts?.length) {
+          console.log('No accounts - disconnecting');
+          setAccount(null);
+          setSigner(null);
+          setProvider(null);
+          console.groupEnd();
+          return;
+        }
 
-      const newAccount = accounts[0];
-      console.log('New account:', newAccount);
+        const newAccount = accounts[0];
+        console.log('Selected account:', newAccount);
 
-      // Only continue if it's a Cyprus-1 address
-      if (newAccount.toLowerCase().startsWith('0x00')) {
-        try {
-          // Check network with provider
+        // Only continue if it's a Cyprus-1 address
+        if (newAccount.toLowerCase().startsWith('0x00')) {
+          // Check network if we have a provider
           if (provider) {
-            const network = await provider.getNetwork();
-            if (network.chainId.toString() === CHAIN_CONFIG.chainId) {
-              console.log('Valid account on correct network - reconnecting');
-              await connectWallet();
-              return;
+            try {
+              console.log('Checking network with existing provider...');
+              const network = await provider.getNetwork();
+              console.log('Network info:', network);
+
+              if (network.chainId.toString() === CHAIN_CONFIG.chainId) {
+                console.log('Valid network - reconnecting wallet');
+                await connectWallet();
+                console.groupEnd();
+                return;
+              }
+              console.log('Wrong network detected');
+            } catch (networkError) {
+              handleError(networkError, 'Network Check');
             }
           }
-          console.log('Network check failed - attempting reconnect');
+
+          // No valid provider or wrong network - try full reconnect
+          console.log('Attempting full reconnect...');
           await connectWallet();
-        } catch (error) {
-          console.error('Error handling account change:', error);
+          
+        } else {
+          console.log('Account is not a Cyprus-1 address - disconnecting');
           setAccount(null);
           setSigner(null);
           setProvider(null);
         }
-      } else {
-        console.log('New account is not a Cyprus-1 address - disconnecting');
+      } catch (error) {
+        handleError(error, 'Account Change Handler');
+        // Clear connection state on error
         setAccount(null);
         setSigner(null);
         setProvider(null);
       }
+      console.groupEnd();
     };
 
     const handleChainChanged = async (chainId) => {
-      console.log('Chain changed:', chainId);
-      if (chainId.toString() === CHAIN_CONFIG.chainId) {
-        // Only reconnect if we have a Cyprus-1 address
-        if (account?.toLowerCase().startsWith('0x00')) {
-          console.log('Correct chain detected - reconnecting');
+      console.group('Chain Change Event');
+      console.log('New chain ID:', chainId);
+      console.log('Current account:', account);
+      
+      try {
+        const isCorrectChain = chainId.toString() === CHAIN_CONFIG.chainId;
+        const hasValidAccount = account?.toLowerCase().startsWith('0x00');
+        
+        console.log('Chain validation:', {
+          isCorrectChain,
+          hasValidAccount,
+          expectedChain: CHAIN_CONFIG.chainId,
+          currentAccount: account
+        });
+
+        if (isCorrectChain && hasValidAccount) {
+          console.log('Valid chain and account - reconnecting');
           await connectWallet();
+        } else {
+          console.log('Invalid chain or account - disconnecting');
+          setAccount(null);
+          setSigner(null);
+          setProvider(null);
         }
-      } else {
-        console.log('Wrong chain detected - disconnecting');
+      } catch (error) {
+        handleError(error, 'Chain Change Handler');
+        // Clear connection state on error
         setAccount(null);
         setSigner(null);
         setProvider(null);
       }
+      console.groupEnd();
     };
 
     // Setup event listeners
