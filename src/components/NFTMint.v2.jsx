@@ -44,13 +44,42 @@ export default function NFTMint() {
       setTxError(null);
       setTxHash(null);
 
+      console.log('Starting mint process...');
       const receipt = await mint();
-      setTxHash(receipt.hash);
-      await refreshData();
+      console.log('Mint transaction receipt:', receipt);
+      
+      if (receipt?.hash) {
+        setTxHash(receipt.hash);
+        console.log('Refreshing data after successful mint...');
+        await refreshData();
+      } else {
+        console.error('Missing transaction hash in receipt:', receipt);
+        throw new Error('Transaction failed - missing hash');
+      }
 
     } catch (err) {
       console.error('Minting error:', err);
-      setTxError(err.message);
+      console.dir(err); // Detailed error logging
+      
+      // Handle different error types
+      let errorMessage = 'Failed to mint NFT';
+      
+      if (err?.code === 4001) {
+        errorMessage = 'You rejected the transaction';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err?.data) {
+        try {
+          const decodedError = quais.utils.toUtf8String(err.data);
+          errorMessage = `Minting failed: ${decodedError}`;
+        } catch (decodeError) {
+          console.error('Error decoding data:', decodeError);
+        }
+      }
+      
+      setTxError(errorMessage);
     } finally {
       setMinting(false);
     }
