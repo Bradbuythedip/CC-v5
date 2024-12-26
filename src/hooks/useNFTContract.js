@@ -87,6 +87,72 @@ export function useNFTContract(signer, provider, account) {
     }
   };
 
+  // Helper function to parse error object
+  const parseError = (error) => {
+    console.log('Parsing error object:', error);
+    console.log('Error type:', typeof error);
+    console.log('Error properties:', Object.keys(error));
+
+    // Default error message
+    let errorMessage = 'Transaction failed. Please try again.';
+
+    if (typeof error === 'object' && error !== null) {
+      // Check for user rejection
+      if (error.code === 4001) {
+        return 'You rejected the transaction';
+      }
+
+      // Check for error data (contract revert)
+      if (error.data) {
+        try {
+          const decodedError = quais.utils.toUtf8String(error.data);
+          const errorMessages = {
+            'MINTING_DISABLED': 'Minting is currently disabled',
+            'MAX_SUPPLY_REACHED': 'All NFTs have been minted',
+            'WALLET_LIMIT_REACHED': 'You have reached your maximum mint limit (20)',
+            'INSUFFICIENT_PAYMENT': 'Please send 1 QUAI to mint',
+            'PAYMENT_FAILED': 'Payment transfer failed. Please try again',
+            'MINT_FAILED': 'NFT minting failed. Please try again'
+          };
+          return errorMessages[decodedError] || `Contract Error: ${decodedError}`;
+        } catch (decodeError) {
+          console.error('Error decoding data:', decodeError);
+        }
+      }
+
+      // Check for transaction property
+      if (error.transaction) {
+        console.log('Transaction details:', error.transaction);
+      }
+
+      // Check for error message
+      if (typeof error.message === 'string') {
+        if (error.message.includes('insufficient funds')) {
+          return 'Insufficient funds in your wallet';
+        }
+        if (error.message.includes('gas required exceeds allowance')) {
+          return 'Transaction might fail - please try again with higher gas limit';
+        }
+        if (error.message.includes('execution reverted')) {
+          return 'Transaction reverted by the contract';
+        }
+        return error.message;
+      }
+
+      // Check for reason property
+      if (error.reason) {
+        return `Transaction failed: ${error.reason}`;
+      }
+    }
+
+    // If error is a string
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    return errorMessage;
+  };
+
   // Mint function
   const mint = async () => {
     if (!contract || !signer || !account) {
@@ -96,6 +162,8 @@ export function useNFTContract(signer, provider, account) {
     const signedContract = contract.connect(signer);
 
     try {
+      console.log('Starting mint transaction...');
+      
       // Prepare transaction options
       const options = {
         gasLimit: "0x2DC6C0", // 3,000,000 gas
@@ -108,12 +176,15 @@ export function useNFTContract(signer, provider, account) {
         options.value = quais.parseEther('1.0');
       }
 
+      console.log('Mint options:', options);
+
       // Send transaction
       const tx = await signedContract.mint(options);
-      console.log('Transaction sent:', tx.hash);
+      console.log('Transaction sent:', tx);
       
+      console.log('Waiting for transaction confirmation...');
       const receipt = await tx.wait();
-      console.log('Transaction receipt:', receipt);
+      console.log('Transaction confirmed:', receipt);
 
       // Refresh data
       await loadContractData();
@@ -121,40 +192,7 @@ export function useNFTContract(signer, provider, account) {
       return receipt;
     } catch (error) {
       console.error('Mint error:', error);
-      
-      let errorMessage = 'Transaction failed. Please try again.';
-      
-      if (error.code === 4001) {
-        errorMessage = 'You rejected the transaction';
-      } else if (error.data) {
-        try {
-          // Try to decode the error data
-          const decodedError = quais.utils.toUtf8String(error.data);
-          
-          // Map contract error codes to user-friendly messages
-          const errorMessages = {
-            'MINTING_DISABLED': 'Minting is currently disabled',
-            'MAX_SUPPLY_REACHED': 'All NFTs have been minted',
-            'WALLET_LIMIT_REACHED': 'You have reached your maximum mint limit (20)',
-            'INSUFFICIENT_PAYMENT': 'Please send 1 QUAI to mint',
-            'PAYMENT_FAILED': 'Payment transfer failed. Please try again',
-            'MINT_FAILED': 'NFT minting failed. Please try again'
-          };
-          
-          errorMessage = errorMessages[decodedError] || `Error: ${decodedError}`;
-        } catch (decodeError) {
-          console.error('Error decoding revert reason:', decodeError);
-          
-          // Check if error message contains any known strings
-          if (error.message?.includes('insufficient funds')) {
-            errorMessage = 'Insufficient funds in your wallet';
-          } else if (error.message?.includes('gas required exceeds allowance')) {
-            errorMessage = 'Transaction might fail - please try again with higher gas limit';
-          }
-        }
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(parseError(error));
     }
   };
 
