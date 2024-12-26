@@ -222,130 +222,171 @@ export function useNFTContract(signer, provider, account) {
       throw new Error('Please connect your wallet');
     }
 
-    const signedContract = contract.connect(signer);
-
     try {
-      console.log('Starting mint transaction...');
+      console.log('Starting mint process...');
       
+      // First check contract state
+      console.log('Checking contract state...');
+      const [mintingEnabled, totalSupply, maxSupply, mintsPerWallet, hasFreeMint] = await Promise.all([
+        contract.mintingEnabled(),
+        contract.totalSupply(),
+        contract.maxSupply(),
+        contract.mintsPerWallet(account),
+        contract.hasUsedFreeMint(account)
+      ]);
+
+      console.log('Contract state:', {
+        mintingEnabled,
+        totalSupply: totalSupply.toString(),
+        maxSupply: maxSupply.toString(),
+        mintsPerWallet: mintsPerWallet.toString(),
+        hasFreeMint: !hasFreeMint
+      });
+
+      // Check conditions
+      if (!mintingEnabled) {
+        throw new Error('Minting is currently disabled');
+      }
+      if (totalSupply >= maxSupply) {
+        throw new Error('All NFTs have been minted');
+      }
+      if (mintsPerWallet >= 20) {
+        throw new Error('You have reached your maximum mint limit (20)');
+      }
+
+      // Prepare transaction
+      const value = !hasFreeMint ? quais.parseEther('1.0') : 0;
+      console.log('Payment amount:', value.toString());
+
+      // Get contract with signer
+      const signedContract = contract.connect(signer);
+
       // Prepare transaction options
       const options = {
-        gasLimit: "0x2DC6C0", // 3,000,000 gas
+        value,
+        gasLimit: quais.BigNumber.from('3000000'), // Start with 3M gas
         maxFeePerGas: quais.parseUnits('20', 'gwei'),
         maxPriorityFeePerGas: quais.parseUnits('20', 'gwei')
       };
 
-      // Add value if not a free mint
-      if (!mintInfo.hasFreeMint) {
-        options.value = quais.parseEther('1.0');
-      }
-
-      console.log('Mint options:', options);
-
-      // First check if minting is possible
-      console.log('Checking contract state before minting...');
+      // Try to estimate gas first
       try {
-        const mintingEnabled = await contract.mintingEnabled();
-        if (!mintingEnabled) {
-          throw new Error('MINTING_DISABLED');
-        }
-
-        const totalSupply = await contract.totalSupply();
-        const maxSupply = await contract.maxSupply();
-        if (totalSupply >= maxSupply) {
-          throw new Error('MAX_SUPPLY_REACHED');
-        }
-
-        const mintsPerWallet = await contract.mintsPerWallet(account);
-        if (mintsPerWallet >= 20) {
-          throw new Error('WALLET_LIMIT_REACHED');
-        }
-      } catch (checkError) {
-        console.error('Pre-mint check failed:', checkError);
-        throw checkError;
-      }
-
-      // Prepare transaction parameters
-      const txParams = {
-        from: account,
-        to: contract.address,
-        data: contract.interface.encodeFunctionData('mint'),
-        ...options
-      };
-
-      console.log('Sending transaction with params:', txParams);
-
-      // Send transaction using Pelagus provider
-      try {
-        const txHash = await window.pelagus.request({
-          method: 'quai_sendTransaction',
-          params: [txParams]
-        });
+        console.log('Estimating gas...');
+        const gasEstimate = await signedContract.estimateGas.mint(options);
+        console.log('Gas estimate:', gasEstimate.toString());
         
-        console.log('Transaction hash:', txHash);
+        // Add 20% buffer to gas estimate
+        options.gasLimit = gasEstimate.mul(120).div(100);
+        console.log('Adjusted gas limit:', options.gasLimit.toString());
+      } catch (gasError) {
+        console.error('Gas estimation failed:', gasError);
+        // Continue with default gas limit
+        console.log('Using default gas limit:', options.gasLimit.toString());
+      }
 
-        // Wait for transaction confirmation
-        console.log('Waiting for transaction confirmation...');
-        const receipt = await provider.waitForTransaction(txHash);
-        console.log('Transaction confirmed:', receipt);
+      // Send transaction
+      console.log('Sending transaction with options:', options);
+      const tx = await signedContract.mint(options);
+      console.log('Transaction sent:', tx.hash);
 
-      // Refresh data
+      // Wait for confirmation
+      console.log('Waiting for confirmation...');
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      // Refresh data and return receipt
       await loadContractData();
-
       return receipt;
+
     } catch (error) {
       console.error('Mint error:', error);
-      
-      // Handle specific Pelagus error codes
+      console.dir(error); // Log full error object
+
+      // Handle user rejection first
       if (error.code === 4001) {
         throw new Error('You rejected the transaction');
       }
+
+      // Try to extract revert reason from error
+      const revertReason = error?.error?.data?.originalError?.data || 
+                          error?.data || 
+                          error?.error?.data;
       
-      // Handle RPC errors (-32000 to -32099)
-      if (error.code && error.code <= -32000 && error.code >= -32099) {
-        if (error.message?.includes('insufficient funds')) {
-          throw new Error('Insufficient funds in your wallet');
+      if (revertReason) {
+        try {
+          // Try to decode the revert reason
+          const bytes = Array.from(Buffer.from(revertReason.slice(2), 'hex'));
+          const reason = new TextDecoder().decode(new Uint8Array(bytes.slice(68)));
+          
+          console.log('Decoded revert reason:', reason);
+          
+          if (reason.includes('ERR:')) {
+            const errorCode = reason.split('ERR:')[1].trim();
+            const errorMessages = {
+              'DISABLED': 'Minting is currently disabled',
+              'MAX_SUPPLY': 'All NFTs have been minted',
+              'WALLET_LIMIT': 'You have reached your maximum mint limit (20)',
+              'WRONG_PRICE': 'Please send 1 QUAI to mint',
+              'PAYMENT_FAILED': 'Payment transfer failed. Please try again',
+              'MINT_FAILED': 'NFT minting failed. Please try again',
+              'INTERNAL': 'Internal contract error. Please try again'
+            };
+            throw new Error(errorMessages[errorCode] || `Contract Error: ${errorCode}`);
+          }
+          throw new Error(`Contract Error: ${reason}`);
+        } catch (decodeError) {
+          console.error('Error decoding revert reason:', decodeError);
         }
-        if (error.message?.includes('nonce too low')) {
-          throw new Error('Transaction nonce too low. Please try again');
-        }
-        if (error.message?.includes('gas required exceeds allowance')) {
-          throw new Error('Gas estimation failed. The transaction might fail');
-        }
-        throw new Error(`RPC Error: ${error.message || 'Unknown RPC error'}`);
       }
 
-      // Handle invalid parameters (-32602)
-      if (error.code === -32602) {
-        throw new Error('Invalid transaction parameters. Please try again');
-      }
-
-      // Handle internal JSON-RPC error (-32603)
-      if (error.code === -32603) {
-        throw new Error('Internal RPC error. Please try again');
-      }
-
-      // If it's a string error from our pre-mint checks
-      if (typeof error.message === 'string') {
-        const errorMessages = {
-          'MINTING_DISABLED': 'Minting is currently disabled',
-          'MAX_SUPPLY_REACHED': 'All NFTs have been minted',
-          'WALLET_LIMIT_REACHED': 'You have reached your maximum mint limit (20)',
-          'INSUFFICIENT_PAYMENT': 'Please send 1 QUAI to mint',
-          'PAYMENT_FAILED': 'Payment transfer failed. Please try again',
-          'MINT_FAILED': 'NFT minting failed. Please try again'
-        };
-
-        const knownError = Object.keys(errorMessages).find(key => 
-          error.message.includes(key)
-        );
-
-        if (knownError) {
-          throw new Error(errorMessages[knownError]);
+      // Handle other common errors
+      if (error.message) {
+        if (error.message.includes('insufficient funds')) {
+          throw new Error('You do not have enough QUAI to complete this transaction');
         }
+        if (error.message.includes('gas required exceeds allowance') || 
+            error.message.includes('out of gas')) {
+          throw new Error('Transaction would fail - please try again with higher gas limit');
+        }
+        if (error.message.includes('nonce too low')) {
+          throw new Error('Please reset your wallet transaction count');
+        }
+        if (error.message.includes('replacement fee too low')) {
+          throw new Error('Gas price too low - please try again with higher gas price');
+        }
+      }
+
+      // Handle RPC errors
+      if (typeof error.code === 'number') {
+        if (error.code <= -32000 && error.code >= -32099) {
+          throw new Error(`RPC Error: ${error.message || 'Unknown RPC error'}`);
+        }
+        if (error.code === -32602) {
+          throw new Error('Invalid transaction parameters');
+        }
+        if (error.code === -32603) {
+          throw new Error('Internal RPC error');
+        }
+      }
+
+      // If we couldn't determine the specific error, check contract state
+      try {
+        const [mintingEnabled, totalSupply, maxSupply, mintsPerWallet] = await Promise.all([
+          contract.mintingEnabled(),
+          contract.totalSupply(),
+          contract.maxSupply(),
+          contract.mintsPerWallet(account)
+        ]);
+
+        if (!mintingEnabled) return 'Minting is currently disabled';
+        if (totalSupply >= maxSupply) return 'All NFTs have been minted';
+        if (mintsPerWallet >= 20) return 'You have reached your maximum mint limit';
+      } catch (stateError) {
+        console.error('Error checking contract state:', stateError);
       }
 
       // Default error message
-      throw new Error('Transaction failed. Please try again');
+      throw new Error('Transaction failed - please try again');
     }
   };
 
