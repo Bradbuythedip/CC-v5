@@ -112,13 +112,11 @@ const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
 const NFT_ABI = [
   "function mint() public payable",
   "function totalSupply() public view returns (uint256)",
-  "function maxSupply() public pure returns (uint256)",
-  "function hasFreeMint(address) public view returns (bool)",
-  "function hasUsedFreeMint(address) public view returns (bool)",
-  "function mintsPerWallet(address) public view returns (uint256)",
+  "function maxSupply() public view returns (uint256)",
   "function name() public view returns (string)",
   "function symbol() public view returns (string)",
-  "function tokenURI(uint256) public view returns (string)"
+  "function tokenURI(uint256) public view returns (string)",
+  "function withdraw() public"
 ];
 
 const NFTMint = () => {
@@ -502,12 +500,12 @@ const NFTMint = () => {
       const currentMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
       console.log('Current mints:', currentMints);
 
-      if (currentMints >= 20) {
-        throw new Error('You have reached the maximum number of mints (20) per wallet');
+      if (currentMints >= 5) {
+        throw new Error('You have reached the maximum number of mints (5) per wallet');
       }
 
-      // Determine if this should be a free mint
-      const shouldBeFree = currentMints === 0;
+      // All mints cost 1 QUAI
+      const shouldBeFree = false;
       console.log('Should be free mint:', shouldBeFree);
 
       // Prepare transaction
