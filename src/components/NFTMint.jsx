@@ -110,7 +110,8 @@ const getProvider = async () => {
 };
 
 const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
-const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null;
+console.log('Contract address loaded:', NFT_CONTRACT_ADDRESS);
+const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null && NFT_CONTRACT_ADDRESS !== undefined;
 const NFT_ABI = [
   "function mint() public payable",
   "function totalSupply() public view returns (uint256)",
@@ -138,7 +139,10 @@ const NFTMint = () => {
 
 
   const loadContractData = async () => {
-    if (!account) return;
+    if (!account || !MINTING_ENABLED) {
+      console.log('Cannot load contract data:', { account, MINTING_ENABLED, NFT_CONTRACT_ADDRESS });
+      return;
+    }
 
     try {
       // Initialize provider
@@ -151,13 +155,17 @@ const NFTMint = () => {
       ];
       
       // Create contract instance
+      console.log('Creating contract instance with address:', NFT_CONTRACT_ADDRESS);
       const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, contractABI, provider);
 
       // Get contract data
+      console.log('Fetching contract data...');
       const [totalSupply, maxSupply] = await Promise.all([
         contract.totalSupply(),
         contract.maxSupply()
       ]);
+
+      console.log('Contract data loaded:', { totalSupply: Number(totalSupply), maxSupply: Number(maxSupply) });
 
       // Update states
       setTotalSupply(Number(totalSupply));
@@ -395,6 +403,10 @@ const NFTMint = () => {
       setLoading(true);
       setError(null);
 
+      if (!MINTING_ENABLED) {
+        throw new Error("Minting is not enabled. Contract address not configured.");
+      }
+
       if (!window.pelagus) {
         throw new Error("Please install Pelagus wallet");
       }
@@ -402,6 +414,12 @@ const NFTMint = () => {
       if (!account) {
         throw new Error("Please connect your wallet first");
       }
+
+      console.log('Starting mint with:', { 
+        account, 
+        contractAddress: NFT_CONTRACT_ADDRESS,
+        mintingEnabled: MINTING_ENABLED 
+      });
 
       // Ensure we're on Cyprus-1 network
       await checkAndSwitchNetwork();
