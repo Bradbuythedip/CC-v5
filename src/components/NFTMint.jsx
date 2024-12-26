@@ -458,131 +458,45 @@ const NFTMint = () => {
       setLoading(true);
       setError(null);
 
-      // Debug state at start of mint
-      console.log('Starting mint process with state:', {
-        MINTING_ENABLED,
-        NFT_CONTRACT_ADDRESS,
-        pelagusDefined: !!window.pelagus,
-        pelagusMethods: window.pelagus ? Object.keys(window.pelagus) : [],
-      });
-
-      // Basic checks
-      if (!MINTING_ENABLED) {
-        throw new Error("Minting is not yet enabled");
-      }
-
       if (!window.pelagus) {
         throw new Error("Please install Pelagus wallet");
       }
 
-      // Debug Pelagus state
-      const debugState = {
-        chainId: await window.pelagus.request({ method: 'eth_chainId' }).catch(e => e.message),
-        balance: await window.pelagus.request({ 
-          method: 'eth_getBalance',
-          params: [currentAccount, 'latest']
-        }).catch(e => e.message)
-      };
-      console.log('Pelagus debug state:', debugState);
-
       if (!account) {
         throw new Error("Please connect your wallet first");
       }
-      const currentAccount = account;
 
-      // Check current mints without requiring approval
-      console.log('Checking current mints...');
-      const mintsResult = await readContract('0x8b7ada50', [currentAccount], false);
-      const currentMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-      console.log('Current mints:', currentMints);
+      // Prepare mint transaction with 1 QUAI value
+      const mintParams = {
+        from: account,
+        to: NFT_CONTRACT_ADDRESS,
+        data: '0x1249c58b', // mint()
+        value: '0xDE0B6B3A7640000', // 1 QUAI
+      };
 
-      if (currentMints >= 5) {
-        throw new Error('You have reached the maximum number of mints (5) per wallet');
+      // Send transaction
+      const txHash = await window.pelagus.request({
+        method: 'eth_sendTransaction',
+        params: [mintParams]
+      });
+
+      if (!txHash) {
+        throw new Error('No transaction hash received');
       }
 
-      // All mints cost 1 QUAI
-      const shouldBeFree = false;
-      console.log('Should be free mint:', shouldBeFree);
-
-      // Prepare transaction
-      console.log('Preparing mint transaction...');
+      console.log('Mint transaction sent:', txHash);
       
-      try {
-        // Check balance first
-        const balance = await window.pelagus.request({
-          method: 'eth_getBalance',
-          params: [currentAccount, 'latest']
-        });
-        
-        const balanceInWei = BigInt(balance);
-        console.log('Current balance (wei):', balanceInWei.toString());
-
-        // Get gas price with debug
-        console.log('Requesting gas price...');
-        const gasPrice = await window.pelagus.request({
-          method: 'eth_gasPrice',
-          params: []
-        }).catch(e => {
-          console.error('Gas price request failed:', e);
-          throw e;
-        });
-        console.log('Current gas price:', {
-          hex: gasPrice,
-          decimal: parseInt(gasPrice, 16),
-          gwei: parseInt(gasPrice, 16) / 1e9
-        });
-
-        // Create base parameters for estimation with debug
-        console.log('Creating transaction parameters. Free mint:', shouldBeFree);
-        const value = shouldBeFree ? '0x0' : '0xDE0B6B3A7640000';
-        console.log('Transaction value:', {
-          hex: value,
-          decimal: parseInt(value || '0', 16),
-          quai: parseInt(value || '0', 16) / 1e18
-        });
-
-        // Prepare mint transaction
-        const mintParams = {
-          from: currentAccount,
-          to: NFT_CONTRACT_ADDRESS,
-          data: '0x1249c58b', // mint()
-          value: '0xDE0B6B3A7640000', // 1 QUAI
-        };
-
-        console.log('Sending mint transaction...');
-        const txHash = await window.pelagus.request({
-          method: 'eth_sendTransaction',
-          params: [mintParams]
-        });
-
-        if (!txHash) {
-          throw new Error('No transaction hash received');
-        }
-
-        console.log('Transaction sent successfully, hash:', txHash);
-        return txHash;
-
-      } catch (err) {
-        // Log the complete error for debugging
-        console.error('Transaction error details:', {
-          code: err.code,
-          message: err.message,
-          data: err.data,
-          stack: err.stack
-        });
-        
-        if (err.code === 4001) {
-          throw new Error('Transaction cancelled. Please try again.');
-        }
-        
-        throw new Error(err.message || 'Failed to mint NFT. Please ensure you have 1 QUAI plus gas fees and are connected to Cyprus-1 network.');
-      }
-
       // Refresh data
       await loadContractData();
+      return txHash;
+
     } catch (err) {
       console.error("Error minting NFT:", err);
-      setError(err.message || "Error minting NFT");
+      if (err.code === 4001) {
+        setError('Transaction cancelled. Please try again.');
+      } else {
+        setError(err.message || 'Failed to mint NFT. Please ensure you have 1 QUAI plus gas fees and are connected to Cyprus-1 network.');
+      }
     } finally {
       setLoading(false);
     }
