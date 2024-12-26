@@ -334,29 +334,54 @@ const NFTMint = () => {
 
   const checkAndSwitchNetwork = async () => {
     try {
-      const provider = new quais.BrowserProvider(window.pelagus, undefined, { usePathing: true });
-      const network = await provider.getNetwork();
-      const chainId = network.chainId;
-      
-      console.log('Current chainId:', chainId.toString());
-      
-      // Cyprus-1 chainId is 0x2330
-      if (chainId.toString() !== '9008') {
+      // First check if Pelagus is available
+      if (!window.pelagus) {
+        throw new Error('Pelagus wallet not found');
+      }
+
+      // Get current chain ID directly from Pelagus
+      const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+      console.log('Current chainId:', chainId);
+
+      // Cyprus-1 chainId is 0x2330 (9008 in decimal)
+      if (chainId !== '0x2330') {
+        console.log('Wrong network detected. Current:', chainId, 'Expected: 0x2330');
+        
         try {
+          // Try to switch to Cyprus-1
           await window.pelagus.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2330' }],
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2330',
+              chainName: 'Cyprus 1',
+              nativeCurrency: {
+                name: 'QUAI',
+                symbol: 'QUAI',
+                decimals: 18
+              },
+              rpcUrls: ['https://rpc.cyprus1.colosseum.quai.network'],
+              blockExplorerUrls: ['https://cyprus1.colosseum.quaiscan.io']
+            }]
           });
-          // Wait a moment for the network switch to complete
+
+          // Verify the switch was successful
+          const newChainId = await window.pelagus.request({ method: 'eth_chainId' });
+          if (newChainId !== '0x2330') {
+            throw new Error('Network switch failed. Please manually switch to Cyprus-1 in Pelagus');
+          }
+
+          // Wait a moment for the switch to complete
           await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.error('Network switch failed:', error);
-          throw new Error('Please connect to Cyprus-1 network in Pelagus');
+        } catch (switchError) {
+          console.error('Network switch error:', switchError);
+          throw new Error('Please manually switch to Cyprus-1 network in Pelagus');
         }
+      } else {
+        console.log('Already on Cyprus-1 network');
       }
     } catch (error) {
-      console.error('Network check failed:', error);
-      throw new Error('Please connect to Cyprus-1 network in Pelagus');
+      console.error('Network check/switch failed:', error);
+      throw error;
     }
   };
 
@@ -394,6 +419,9 @@ const NFTMint = () => {
         }
         if (err.code === -32002) {
           throw new Error("Connection request already pending. Please check Pelagus extension.");
+        }
+        if (err.message && err.message.includes('Cyprus-1')) {
+          throw new Error("Please open Pelagus wallet and switch to the Cyprus-1 network, then try again.");
         }
         throw err;
       }
