@@ -45,17 +45,7 @@ const checkMethodSupport = async (method) => {
   }
 };
 
-// Helper function to check chain
-const checkChain = async (provider) => {
-  try {
-    if (!provider) return false;
-    const network = await provider.getNetwork();
-    return network?.chainId.toString() === '9000'; // Cyprus-1 chain ID
-  } catch (error) {
-    console.error('Chain check error:', error);
-    return false;
-  }
-};
+
 
 // Helper function to handle errors
 const handleError = (error, context = '') => {
@@ -147,6 +137,26 @@ const getAddressInfo = (address) => {
   }
 };
 
+// Helper function for chain checking
+export const checkChain = async (provider) => {
+  if (!provider) return false;
+  
+  try {
+    // Check network using provider
+    const network = await provider.getNetwork();
+    console.log('Network check:', {
+      current: network.chainId.toString(),
+      expected: '9000',
+      name: network.name
+    });
+    return network.chainId.toString() === '9000'; // Cyprus-1
+  } catch (error) {
+    console.error('Chain check failed:', error);
+    return false;
+  }
+};
+
+// Main hook
 export function useQuaiProvider() {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
@@ -166,49 +176,35 @@ export function useQuaiProvider() {
       setIsConnecting(true);
       setError(null);
 
+      // Check for Pelagus
       console.log('Checking for Pelagus wallet...');
       if (!window.pelagus) {
         window.open('https://pelagus.space/download', '_blank');
         throw new Error('Please install Pelagus wallet');
       }
 
-      console.log('Checking available methods...');
-      const isQuaiSupported = await checkMethodSupport('quai_requestAccounts');
-      const isEthSupported = await checkMethodSupport('eth_requestAccounts');
-
-      if (!isQuaiSupported && !isEthSupported) {
-        throw new Error('No supported account request method found');
-      }
-
-      console.log('Method support:', {
-        quai_requestAccounts: isQuaiSupported,
-        eth_requestAccounts: isEthSupported
-      });
-
-      console.log('Requesting accounts...');
+      // Request accounts using quai_requestAccounts
+      console.log('Requesting access to accounts...');
       let accounts;
       try {
-        if (isQuaiSupported) {
-          accounts = await window.pelagus.request({
-            method: 'quai_requestAccounts'
+        accounts = await window.pelagus
+          .request({ 
+            method: 'quai_requestAccounts' 
+          })
+          .then(result => {
+            console.log('Account request successful:', result);
+            return result;
+          })
+          .catch(error => {
+            console.error('Account request error:', error);
+            if (error.code === 4001) {
+              throw new Error('You rejected the connection request');
+            }
+            throw error;
           });
-          console.log('Account request successful (quai):', accounts);
-        } else {
-          accounts = await window.pelagus.request({
-            method: 'eth_requestAccounts'
-          });
-          console.log('Account request successful (eth):', accounts);
-        }
       } catch (error) {
-        console.error('Account request failed:', error);
-        if (error.code === 4001) {
-          throw new Error('You rejected the connection request');
-        } else if (error.code === -32002) {
-          throw new Error('Request already pending. Please check your wallet');
-        } else if (error.code === -32603) {
-          throw new Error('Error connecting to wallet. Please try again');
-        }
-        throw new Error(error.message || 'Failed to connect wallet');
+        console.error('Failed to request accounts:', error);
+        throw new Error(error.message || 'Failed to connect to wallet');
       }
 
       if (!accounts?.length) {
@@ -227,33 +223,35 @@ export function useQuaiProvider() {
       console.log('Setting up providers...');
       try {
         // Create RPC provider for network interactions
-        const rpcProvider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl, {
+        const quaiProvider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl, {
           name: CHAIN_CONFIG.name,
           chainId: parseInt(CHAIN_CONFIG.chainId)
         });
 
-        // Create Pelagus provider for signing
-        const pelagusProvider = new quais.Web3Provider(window.pelagus, {
-          name: CHAIN_CONFIG.name,
-          chainId: parseInt(CHAIN_CONFIG.chainId)
-        });
-
-        // Verify network
-        const network = await rpcProvider.getNetwork();
+        // Check network
+        const network = await quaiProvider.getNetwork();
         console.log('Network info:', network);
 
         if (network.chainId.toString() !== CHAIN_CONFIG.chainId) {
-          console.log('Wrong network, attempting to switch...');
+          const formattedChainId = `0x${parseInt(CHAIN_CONFIG.chainId).toString(16)}`;
+          console.log('Wrong network, attempting to switch...', formattedChainId);
+
           try {
+            // Try to switch network
             await window.pelagus.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: CHAIN_CONFIG.chainId }]
+              params: [{ chainId: formattedChainId }]
+            }).catch(error => {
+              console.error('Network switch error:', error);
+              if (error.code === 4001) {
+                throw new Error('You rejected the network switch');
+              } else if (error.code === 4200) {
+                throw new Error('Network switch not supported. Please switch manually to Cyprus-1');
+              }
+              throw error;
             });
-          } catch (switchError) {
-            console.error('Network switch error:', switchError);
-            if (switchError.code === 4200) {
-              throw new Error('Network switching not supported. Please switch manually to Cyprus-1');
-            }
+          } catch (error) {
+            console.error('Failed to switch network:', error);
             throw new Error('Please switch to Cyprus-1 network in Pelagus');
           }
         }
@@ -492,6 +490,66 @@ export function useQuaiProvider() {
     };
   }, [account]);
 
+  // Helper function to send transaction
+  const sendTransaction = async (txParams) => {
+    if (!window.pelagus || !account) {
+      throw new Error('Please connect your wallet first');
+    }
+
+    console.group('Transaction');
+    console.log('Transaction params:', txParams);
+
+    try {
+      // Prepare transaction parameters
+      const params = {
+        from: account,
+        ...txParams
+      };
+
+      // Convert values to hex if needed
+      if (params.value && !params.value.startsWith('0x')) {
+        params.value = `0x${BigInt(params.value).toString(16)}`;
+      }
+      if (params.gasLimit && !params.gasLimit.startsWith('0x')) {
+        params.gasLimit = `0x${BigInt(params.gasLimit).toString(16)}`;
+      }
+      if (params.maxFeePerGas && !params.maxFeePerGas.startsWith('0x')) {
+        params.maxFeePerGas = `0x${BigInt(params.maxFeePerGas).toString(16)}`;
+      }
+
+      console.log('Formatted params:', params);
+
+      // Send transaction
+      const txHash = await window.pelagus
+        .request({
+          method: 'quai_sendTransaction',
+          params: [params]
+        })
+        .then(result => {
+          console.log('Transaction hash:', result);
+          return result;
+        })
+        .catch(error => {
+          console.error('Transaction error:', error);
+          if (error.code === 4001) {
+            throw new Error('You rejected the transaction');
+          }
+          throw error;
+        });
+
+      console.log('Waiting for confirmation...');
+      const receipt = await provider.waitForTransaction(txHash);
+      console.log('Transaction confirmed:', receipt);
+
+      console.groupEnd();
+      return { hash: txHash, receipt };
+    } catch (error) {
+      console.error('Transaction failed:', error);
+      console.groupEnd();
+      throw new Error(error.message || 'Transaction failed');
+    }
+  };
+
   // Helper function to sign messages
   const signMessage = async (message) => {
     if (!window.pelagus || !account) {
@@ -499,20 +557,25 @@ export function useQuaiProvider() {
     }
 
     console.group('Message Signing');
-    console.log('Message to sign:', message);
-    console.log('Signing account:', account);
+    console.log('Message:', message);
+    console.log('Signer:', account);
 
     try {
+      // Convert message to hex if needed
+      const msg = message.startsWith('0x') ? 
+        message : 
+        `0x${Buffer.from(message, 'utf8').toString('hex')}`;
+
       const signature = await window.pelagus
         .request({
           method: 'personal_sign',
-          params: [message, account]
+          params: [msg, account]
         })
-        .then((result) => {
+        .then(result => {
           console.log('Signature:', result);
           return result;
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('Signing error:', error);
           if (error.code === 4001) {
             throw new Error('You rejected the signing request');
@@ -592,7 +655,10 @@ export function useQuaiProvider() {
     account,
     error,
     isConnecting,
+    isPelagusDetected,
     connectWallet,
+    sendTransaction,
+    signMessage,
     signMessage,
     signTypedData
   };
