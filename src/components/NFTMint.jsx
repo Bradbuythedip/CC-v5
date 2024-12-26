@@ -333,7 +333,19 @@ const NFTMint = () => {
         });
 
         const isConnected = Array.isArray(accounts) && accounts.length > 0;
-        console.log('Connection status:', { isConnected, accounts });
+        
+        if (isConnected) {
+          // Check network when already connected
+          try {
+            await checkAndSwitchNetwork();
+          } catch (err) {
+            console.error('Network check failed:', err);
+            setError(err.message);
+            setIsConnected(false);
+            setAccount(null);
+            return;
+          }
+        }
 
         setIsConnected(isConnected);
         
@@ -400,6 +412,20 @@ const NFTMint = () => {
     return () => {};
   }, []);
 
+  const checkAndSwitchNetwork = async () => {
+    const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+    if (chainId !== '0x2330') {
+      try {
+        await window.pelagus.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2330' }], // Cyprus-1
+        });
+      } catch (error) {
+        throw new Error('Please connect to Cyprus-1 network in Pelagus');
+      }
+    }
+  };
+
   const connectWallet = async () => {
     try {
       // Check for supported browsers
@@ -417,27 +443,19 @@ const NFTMint = () => {
       }
 
       try {
-        // Check network and request account access
-        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
-        console.log('Connected to chain:', chainId);
-        
-        // Cyprus-1 chainId is 0x2330
-        if (chainId !== '0x2330') {
-          throw new Error('Please connect to Cyprus-1 network in Pelagus');
-        }
+        // Check and switch to Cyprus-1 network
+        await checkAndSwitchNetwork();
 
         const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
           setIsConnected(true);
           setAccount(accounts[0]);
-          setError(null); // Clear any previous errors
-          // Load contract data after successful connection
+          setError(null);
           await loadContractData();
         }
       } catch (err) {
         console.error('Connection error:', err);
         if (err.code === 4001) {
-          // User rejected the connection request
           throw new Error("Please approve the connection request in Pelagus");
         }
         if (err.code === -32002) {
@@ -465,6 +483,9 @@ const NFTMint = () => {
       if (!account) {
         throw new Error("Please connect your wallet first");
       }
+
+      // Ensure we're on Cyprus-1 network
+      await checkAndSwitchNetwork();
 
       // Prepare mint transaction with 1 QUAI value
       const mintParams = {
