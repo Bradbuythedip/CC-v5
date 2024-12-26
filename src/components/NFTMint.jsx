@@ -489,19 +489,6 @@ const NFTMint = () => {
       }
       
       setOwnedNFTs(nfts);
-          if (response.ok) {
-            const metadata = await response.json();
-            nfts.push({
-              id: i,
-              ...metadata
-            });
-          }
-        } catch (err) {
-          console.error(`Error loading NFT #${i} metadata:`, err);
-        }
-      }
-      
-      setOwnedNFTs(nfts);
     } catch (err) {
       console.error("Error loading owned NFTs:", err);
     }
