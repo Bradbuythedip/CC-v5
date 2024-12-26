@@ -343,32 +343,33 @@ const NFTMint = () => {
       const chainId = await window.pelagus.request({ method: 'eth_chainId' });
       console.log('Current chainId:', chainId);
 
-      // Cyprus-1 chainId is 0x2330 (9008 in decimal)
-      if (chainId !== '0x2330') {
-        console.log('Wrong network detected. Current:', chainId, 'Expected: 0x2330');
+      // Cyprus-1 chainId is 0x2328 (9000 in decimal)
+      if (chainId !== '0x2328') {
+        console.log('Wrong network detected. Current:', chainId, 'Expected: 0x2328');
         
         try {
           // Try to switch to Cyprus-1
           await window.pelagus.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x2330',
+              chainId: '0x2328',
               chainName: 'Cyprus 1',
               nativeCurrency: {
                 name: 'QUAI',
                 symbol: 'QUAI',
                 decimals: 18
               },
-              rpcUrls: ['https://rpc.cyprus1.colosseum.quai.network'],
-              blockExplorerUrls: ['https://cyprus1.colosseum.quaiscan.io']
+              rpcUrls: ['https://rpc.cyprus1.testnet.quai.network'],
+              blockExplorerUrls: ['https://cyprus1.testnet.quaiscan.io']
             }]
           });
 
           // Verify the switch was successful
           const newChainId = await window.pelagus.request({ method: 'eth_chainId' });
-          if (newChainId !== '0x2330') {
+          if (newChainId !== '0x2328') {
             throw new Error('Network switch failed. Please manually switch to Cyprus-1 in Pelagus');
           }
+          console.log('Successfully switched to Cyprus-1');
 
           // Wait a moment for the switch to complete
           await new Promise(resolve => setTimeout(resolve, 1000));
