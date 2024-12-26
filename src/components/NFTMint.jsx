@@ -109,9 +109,16 @@ const getProvider = async () => {
   }
 };
 
-const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
-console.log('Contract address loaded:', NFT_CONTRACT_ADDRESS);
-const MINTING_ENABLED = NFT_CONTRACT_ADDRESS !== null && NFT_CONTRACT_ADDRESS !== undefined;
+// Contract address is hardcoded here as fallback
+const CONTRACT_ADDRESS = '0x0022829f37d6139471aD521AdD335ED73CBE11fA';
+console.log('Environment variables:', import.meta.env);
+
+// Try to get from env, fallback to hardcoded
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || CONTRACT_ADDRESS;
+console.log('Contract address loaded:', NFT_CONTRACT_ADDRESS, typeof NFT_CONTRACT_ADDRESS);
+
+// Enable minting if we have a contract address
+const MINTING_ENABLED = Boolean(NFT_CONTRACT_ADDRESS);
 const NFT_ABI = [
   "function mint() public payable",
   "function totalSupply() public view returns (uint256)",

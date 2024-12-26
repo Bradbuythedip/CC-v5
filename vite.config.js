@@ -62,6 +62,7 @@ export default defineConfig({
     include: ['react', 'react-dom', 'ethers'],
   },
   define: {
-    'process.env': {},
+    'process.env': process.env,
+    'import.meta.env.VITE_CONTRACT_ADDRESS': JSON.stringify('0x0022829f37d6139471aD521AdD335ED73CBE11fA'),
   },
 })
