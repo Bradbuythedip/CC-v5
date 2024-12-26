@@ -137,9 +137,9 @@ export function useQuaiProvider() {
       console.log('Requesting accounts from Pelagus...');
       let accounts;
       try {
-        // Use the standard eth_requestAccounts method
+        // Use the proper Pelagus method
         accounts = await window.pelagus.request({
-          method: 'eth_requestAccounts'
+          method: 'quai_requestAccounts'
         });
         console.log('Accounts received:', accounts);
       } catch (error) {
@@ -157,19 +157,30 @@ export function useQuaiProvider() {
       const currentAccount = accounts[0];
       console.log('Selected account:', currentAccount);
 
-      // Create provider
-      console.log('Setting up provider with Pelagus...');
+      // Get zone information using quais SDK
+      const zone = quais.getZoneFromAddress(currentAccount);
+      console.log('Zone info:', zone);
+
+      if (!zone?.toLowerCase().includes('cyprus')) {
+        throw new Error('Please switch to a Cyprus-1 address');
+      }
+
+      // Set up Pelagus provider
+      console.log('Setting up Pelagus provider...');
       try {
-        const quaiProvider = new quais.Web3Provider(window.pelagus);
-        console.log('Provider created:', quaiProvider);
+        // Create provider with node URL and network config
+        const quaiProvider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl, {
+          name: CHAIN_CONFIG.name,
+          chainId: parseInt(CHAIN_CONFIG.chainId)
+        });
 
         // Verify network
         const network = await quaiProvider.getNetwork();
         console.log('Network info:', network);
 
         if (network.chainId.toString() !== CHAIN_CONFIG.chainId) {
+          console.log('Wrong network, attempting to switch...');
           try {
-            // Try to switch network
             await window.pelagus.request({
               method: 'wallet_switchEthereumChain',
               params: [{ chainId: CHAIN_CONFIG.chainId }]
@@ -180,15 +191,10 @@ export function useQuaiProvider() {
           }
         }
 
-        // Get signer
-        const quaiSigner = quaiProvider.getSigner();
-        console.log('Signer created');
-
-        // Verify the zone by checking the address prefix
-        if (!currentAccount.toLowerCase().startsWith('0x00')) {
-          throw new Error('Please switch to a Cyprus-1 address (starting with 0x00)');
-        }
+        // Get signer from Pelagus
+        const quaiSigner = new quais.Web3Provider(window.pelagus).getSigner();
         
+        // Set state
         setProvider(quaiProvider);
         setSigner(quaiSigner);
         setAccount(currentAccount);
@@ -236,38 +242,54 @@ export function useQuaiProvider() {
 
     const checkConnection = async () => {
       try {
-        // Check if we already have access to accounts
+        console.group('Checking Existing Connection');
+        
+        // Check if we have permission to access accounts
         const accounts = await window.pelagus.request({
-          method: 'eth_accounts'
+          method: 'quai_accounts'
         });
-        console.log('Checking existing connection:', accounts);
+        console.log('Existing accounts:', accounts);
         
         if (accounts?.length) {
           const currentAccount = accounts[0];
+          console.log('Current account:', currentAccount);
           
-          // Check if it's a Cyprus-1 address
-          if (currentAccount.toLowerCase().startsWith('0x00')) {
-            try {
-              // Create provider to check network
-              const provider = new quais.Web3Provider(window.pelagus);
+          try {
+            // Get zone information
+            const zone = quais.getZoneFromAddress(currentAccount);
+            console.log('Zone info:', zone);
+            
+            if (zone?.toLowerCase().includes('cyprus')) {
+              // Check network with RPC provider
+              const provider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl);
               const network = await provider.getNetwork();
+              console.log('Network info:', network);
               
               if (network.chainId.toString() === CHAIN_CONFIG.chainId) {
                 console.log('Valid existing connection found');
                 await connectWallet();
               } else {
-                console.log('Wrong network for existing connection');
+                console.log('Wrong network - connection needed');
               }
-            } catch (error) {
-              console.error('Error checking existing connection:', error);
+            } else {
+              console.log('Account is not on Cyprus-1 zone');
             }
-          } else {
-            console.log('Existing account is not a Cyprus-1 address');
+          } catch (error) {
+            console.error('Error during connection check:', error);
+            if (error?.code !== 4001) {  // Don't log user rejections
+              console.dir(error);
+            }
           }
+        } else {
+          console.log('No existing connection found');
         }
+        
+        console.groupEnd();
       } catch (error) {
-        console.error('Error checking connection:', error);
-        console.dir(error);
+        console.error('Connection check failed:', error);
+        if (error?.code !== 4001) {  // Don't log user rejections
+          console.dir(error);
+        }
       }
     };
 
