@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { quais } from 'quais';
 import {
   Box,
   Button,
@@ -134,129 +135,33 @@ const NFTMint = () => {
     setMintAmount(newValue);
   };
 
-  // Contract helper functions for view functions
-  const readContract = async (functionSelector, params = [], retry = true) => {
-    try {
-      console.log(`Calling contract with selector: ${functionSelector}`);
-      let data = functionSelector;
-      if (params.length > 0) {
-        const encodedParams = params.map(p => {
-          // Remove 0x if present and pad
-          const cleaned = p.replace('0x', '').toLowerCase();
-          return cleaned.padStart(64, '0');
-        }).join('');
-        console.log('Encoded params:', encodedParams);
-        data += encodedParams;
-      }
 
-      // Get the current account if available
-      let from;
-      try {
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-        if (accounts?.length > 0) {
-          from = accounts[0];
-        }
-      } catch (e) {
-        console.log('Failed to get current account:', e);
-      }
-
-      // Call params for view function
-      const callParams = {
-        to: NFT_CONTRACT_ADDRESS,
-        data,
-      };
-      if (from) {
-        callParams.from = from;
-      }
-
-      // Try different RPC methods
-      const methods = retry ? ['eth_call', 'quai_call'] : ['eth_call'];
-      let lastError;
-
-      for (const method of methods) {
-        try {
-          const result = await window.pelagus.request({
-            method,
-            params: [callParams, 'latest']
-          });
-          
-          if (result) {
-            console.log(`Contract call success (${method}):`, result);
-            return result;
-          }
-        } catch (err) {
-          console.log(`${method} failed:`, err);
-          lastError = err;
-          // If it's a user rejection and we're not retrying, break immediately
-          if (err.code === 4001 && !retry) break;
-          // Otherwise continue to next method
-        }
-      }
-
-      // If we got here, all methods failed
-      if (lastError?.code === 4001) {
-        console.log('All methods failed with user rejection');
-        // For view functions, continue with default values instead of throwing
-        return null;
-      }
-
-      throw lastError || new Error('All RPC methods failed');
-    } catch (error) {
-      console.error('Contract call error:', error);
-      // For view functions, we'll use default values instead of throwing
-      return null;
-    }
-  };
 
   const loadContractData = async () => {
-    if (!MINTING_ENABLED) {
-      setError("Minting is not yet enabled");
-      return;
-    }
+    if (!account) return;
 
     try {
-      // First check if we're already connected
-      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-      if (!accounts || accounts.length === 0) {
-        // Don't show an error, just return silently as we're not connected yet
-        return;
-      }
+      // Initialize provider
+      const provider = new quais.BrowserProvider(window.pelagus, undefined, { usePathing: true });
+      
+      // Contract ABI for view functions
+      const contractABI = [
+        "function totalSupply() public view returns (uint256)",
+        "function maxSupply() public view returns (uint256)"
+      ];
+      
+      // Create contract instance
+      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, contractABI, provider);
 
-      const currentAccount = accounts[0];
-
-      // Get all contract data in parallel
-      const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
-        readContract("0x18160ddd"),
-        readContract("0xd5abeb01"),
-        readContract("0x8b7ada50", [currentAccount])
+      // Get contract data
+      const [totalSupply, maxSupply] = await Promise.all([
+        contract.totalSupply(),
+        contract.maxSupply()
       ]);
 
-      // Parse results with default values
-      const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
-      console.log("Total supply:", total);
-
-      const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
-      console.log("Max supply:", max);
-
-      const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
-      console.log("Current mints for wallet:", mintsCount);
-
-      // Calculate states
-      const hasUsedFree = mintsCount > 0;
-      const canMint = mintsCount < 20;
-      const shouldBeFree = !hasUsedFree;
-
-      console.log("Mint status:", {
-        hasUsedFree,
-        canMint,
-        shouldBeFree,
-        mintsCount
-      });
-
-      // Update all states
-      setTotalSupply(total);
-      setMaxSupply(max);
-      setHasFreeMint(shouldBeFree);
+      // Update states
+      setTotalSupply(Number(totalSupply));
+      setMaxSupply(Number(maxSupply));
 
     } catch (err) {
       console.error("Error loading contract data:", err);
@@ -487,29 +392,37 @@ const NFTMint = () => {
       // Ensure we're on Cyprus-1 network
       await checkAndSwitchNetwork();
 
-      // Prepare mint transaction with 1 QUAI value
-      const mintParams = {
-        from: account,
-        to: NFT_CONTRACT_ADDRESS,
-        data: '0x1249c58b', // mint()
-        value: '0xDE0B6B3A7640000', // 1 QUAI
-      };
+      // Initialize provider and signer
+      const provider = new quais.BrowserProvider(window.pelagus, undefined, { usePathing: true });
+      const signer = await provider.getSigner();
 
-      // Send transaction
-      const txHash = await window.pelagus.request({
-        method: 'eth_sendTransaction',
-        params: [mintParams]
-      });
-
-      if (!txHash) {
-        throw new Error('No transaction hash received');
-      }
-
-      console.log('Mint transaction sent:', txHash);
+      // Contract ABI for mint function
+      const contractABI = ["function mint() public payable"];
       
-      // Refresh data
-      await loadContractData();
-      return txHash;
+      // Create contract instance
+      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, contractABI, signer);
+
+      try {
+        // Call mint function with 1 QUAI value
+        const tx = await contract.mint({
+          value: quais.parseEther("1.0") // 1 QUAI
+        });
+
+        console.log('Mint transaction sent:', tx.hash);
+        
+        // Wait for transaction to be mined
+        await tx.wait();
+        console.log('Mint transaction confirmed');
+
+        // Refresh data
+        await loadContractData();
+        return tx.hash;
+      } catch (error) {
+        if (error.code === 'ACTION_REJECTED') {
+          throw new Error('Transaction cancelled by user');
+        }
+        throw error;
+      }
 
     } catch (err) {
       console.error("Error minting NFT:", err);
