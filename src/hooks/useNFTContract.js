@@ -89,20 +89,86 @@ export function useNFTContract(signer, provider, account) {
 
   // Helper function to parse error object
   const parseError = (error) => {
-    console.log('Parsing error object:', error);
+    console.log('Full error object:', error);
     console.log('Error type:', typeof error);
-    console.log('Error properties:', Object.keys(error));
-
+    
     // Default error message
     let errorMessage = 'Transaction failed. Please try again.';
 
-    if (typeof error === 'object' && error !== null) {
-      // Check for user rejection
+    try {
+      // If error is a string, return it directly
+      if (typeof error === 'string') {
+        return error;
+      }
+
+      // If error is not an object or is null, return default message
+      if (typeof error !== 'object' || error === null) {
+        return errorMessage;
+      }
+
+      // Log all error properties for debugging
+      Object.keys(error).forEach(key => {
+        console.log(`${key}:`, error[key]);
+      });
+
+      // Handle user rejection
       if (error.code === 4001) {
         return 'You rejected the transaction';
       }
 
-      // Check for error data (contract revert)
+      // Handle CALL_EXCEPTION with missing revert data
+      if (error.code === 'CALL_EXCEPTION' && error.transaction) {
+        console.log('Transaction data:', error.transaction);
+        
+        // Get contract state to determine why the call failed
+        const checkContractState = async () => {
+          try {
+            const [
+              mintingEnabled,
+              totalSupply,
+              maxSupply,
+              mintsPerWallet,
+              hasFreeMint
+            ] = await Promise.all([
+              contract.mintingEnabled(),
+              contract.totalSupply(),
+              contract.maxSupply(),
+              contract.mintsPerWallet(error.transaction.from),
+              contract.hasFreeMint(error.transaction.from)
+            ]);
+
+            console.log('Contract state:', {
+              mintingEnabled,
+              totalSupply: totalSupply.toString(),
+              maxSupply: maxSupply.toString(),
+              mintsPerWallet: mintsPerWallet.toString(),
+              hasFreeMint
+            });
+
+            // Check various conditions
+            if (!mintingEnabled) {
+              return 'Minting is currently disabled';
+            }
+            if (totalSupply >= maxSupply) {
+              return 'All NFTs have been minted';
+            }
+            if (mintsPerWallet >= 20) {
+              return 'You have reached your maximum mint limit (20)';
+            }
+            if (!hasFreeMint && (!error.transaction.value || error.transaction.value === '0x0')) {
+              return 'Please send 1 QUAI to mint';
+            }
+          } catch (stateError) {
+            console.error('Error checking contract state:', stateError);
+          }
+          return 'Transaction failed - please check your wallet and try again';
+        };
+
+        // Since we can't return a promise directly, mark as checking
+        return 'Checking transaction status...';
+      }
+
+      // Handle contract revert with data
       if (error.data) {
         try {
           const decodedError = quais.utils.toUtf8String(error.data);
@@ -120,34 +186,31 @@ export function useNFTContract(signer, provider, account) {
         }
       }
 
-      // Check for transaction property
-      if (error.transaction) {
-        console.log('Transaction details:', error.transaction);
-      }
-
-      // Check for error message
-      if (typeof error.message === 'string') {
-        if (error.message.includes('insufficient funds')) {
+      // Check common error messages
+      if (error.message) {
+        const message = error.message.toLowerCase();
+        if (message.includes('insufficient funds')) {
           return 'Insufficient funds in your wallet';
         }
-        if (error.message.includes('gas required exceeds allowance')) {
+        if (message.includes('gas required exceeds allowance')) {
           return 'Transaction might fail - please try again with higher gas limit';
         }
-        if (error.message.includes('execution reverted')) {
+        if (message.includes('execution reverted')) {
           return 'Transaction reverted by the contract';
+        }
+        if (message.includes('nonce too high')) {
+          return 'Please reset your wallet transaction count';
         }
         return error.message;
       }
 
-      // Check for reason property
+      // Check for reason
       if (error.reason) {
         return `Transaction failed: ${error.reason}`;
       }
-    }
 
-    // If error is a string
-    if (typeof error === 'string') {
-      return error;
+    } catch (parseError) {
+      console.error('Error while parsing error:', parseError);
     }
 
     return errorMessage;
