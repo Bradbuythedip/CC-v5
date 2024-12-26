@@ -137,17 +137,33 @@ export function useQuaiProvider() {
       console.log('Requesting accounts from Pelagus...');
       let accounts;
       try {
-        // Use the proper Pelagus method
-        accounts = await window.pelagus.request({
-          method: 'quai_requestAccounts'
-        });
-        console.log('Accounts received:', accounts);
+        // Request accounts using proper method
+        accounts = await window.pelagus
+          .request({ 
+            method: 'quai_requestAccounts'
+          })
+          .then((result) => {
+            console.log('Account request successful:', result);
+            return result;
+          })
+          .catch((error) => {
+            console.error('Account request error:', error);
+            if (error.code === 4001) {
+              throw new Error('You rejected the connection request');
+            }
+            throw error;
+          });
       } catch (error) {
-        console.error('Account request error:', error);
+        console.error('Account request failed:', error);
+        // Handle specific error codes
         if (error.code === 4001) {
           throw new Error('You rejected the connection request');
+        } else if (error.code === -32002) {
+          throw new Error('Request already pending. Please check your wallet');
+        } else if (error.code === -32603) {
+          throw new Error('Error connecting to wallet. Please try again');
         }
-        throw new Error(error.message || 'Failed to get accounts');
+        throw new Error(error.message || 'Failed to connect wallet');
       }
 
       if (!accounts?.length) {
@@ -403,12 +419,108 @@ export function useQuaiProvider() {
     };
   }, [account]);
 
+  // Helper function to sign messages
+  const signMessage = async (message) => {
+    if (!window.pelagus || !account) {
+      throw new Error('Please connect your wallet first');
+    }
+
+    console.group('Message Signing');
+    console.log('Message to sign:', message);
+    console.log('Signing account:', account);
+
+    try {
+      const signature = await window.pelagus
+        .request({
+          method: 'personal_sign',
+          params: [message, account]
+        })
+        .then((result) => {
+          console.log('Signature:', result);
+          return result;
+        })
+        .catch((error) => {
+          console.error('Signing error:', error);
+          if (error.code === 4001) {
+            throw new Error('You rejected the signing request');
+          }
+          throw error;
+        });
+
+      console.groupEnd();
+      return signature;
+
+    } catch (error) {
+      console.error('Message signing failed:', error);
+      console.groupEnd();
+      
+      if (error.code === 4001) {
+        throw new Error('You rejected the signing request');
+      } else if (error.code === -32602) {
+        throw new Error('Invalid parameters for signing');
+      } else if (error.code === -32603) {
+        throw new Error('Error during signing. Please try again');
+      }
+      
+      throw new Error(error.message || 'Failed to sign message');
+    }
+  };
+
+  // Helper function to sign typed data
+  const signTypedData = async (typedData) => {
+    if (!window.pelagus || !account) {
+      throw new Error('Please connect your wallet first');
+    }
+
+    console.group('Typed Data Signing');
+    console.log('Data to sign:', typedData);
+    console.log('Signing account:', account);
+
+    try {
+      const signature = await window.pelagus
+        .request({
+          method: 'quai_signTypedData_v4',
+          params: [account, typedData]
+        })
+        .then((result) => {
+          console.log('Signature:', result);
+          return result;
+        })
+        .catch((error) => {
+          console.error('Signing error:', error);
+          if (error.code === 4001) {
+            throw new Error('You rejected the signing request');
+          }
+          throw error;
+        });
+
+      console.groupEnd();
+      return signature;
+
+    } catch (error) {
+      console.error('Typed data signing failed:', error);
+      console.groupEnd();
+      
+      if (error.code === 4001) {
+        throw new Error('You rejected the signing request');
+      } else if (error.code === -32602) {
+        throw new Error('Invalid typed data format');
+      } else if (error.code === -32603) {
+        throw new Error('Error during signing. Please try again');
+      }
+      
+      throw new Error(error.message || 'Failed to sign typed data');
+    }
+  };
+
   return {
     provider,
     signer,
     account,
     error,
     isConnecting,
-    connectWallet
+    connectWallet,
+    signMessage,
+    signTypedData
   };
 }
