@@ -6,6 +6,7 @@ import {
   Slider,
   CircularProgress,
   Stack,
+  Link,
 } from '@mui/material';
 
 // Helper function to wait for Pelagus to be fully initialized
@@ -887,6 +888,23 @@ const NFTMint = () => {
           )}
         </Button>
       </Stack>
+      {/* Contract Information */}
+      <Box sx={{ mt: 2, textAlign: 'center' }}>
+        <Typography variant="body2" sx={{ color: '#00ff9d' }}>
+          Contract Address:{' '}
+          <Link
+            href={`https://cyprus1.testnet.quaiscan.io/address/${NFT_CONTRACT_ADDRESS}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ color: '#00ff9d', textDecorationColor: '#00ff9d' }}
+          >
+            {NFT_CONTRACT_ADDRESS}
+          </Link>
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#00ff9d', mt: 1 }}>
+          Total Minted: {totalSupply} / {maxSupply}
+        </Typography>
+      </Box>
     </Box>
   );
 };
