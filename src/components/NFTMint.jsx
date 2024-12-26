@@ -472,32 +472,52 @@ const NFTMint = () => {
 
       try {
         // Call mint function with 1 QUAI value
+        console.log('Starting mint transaction with contract:', NFT_CONTRACT_ADDRESS);
+        const mintValue = quais.parseEther("1.0"); // 1 QUAI
+        console.log('Mint value:', mintValue.toString());
+
+        // Try to mint
         const tx = await contract.mint({
-          value: quais.parseEther("1.0") // 1 QUAI
+          value: mintValue
+        }).catch(error => {
+          console.error('Mint call failed:', error);
+          throw error;
         });
 
         console.log('Mint transaction sent:', tx.hash);
         
         // Wait for transaction to be mined
-        await tx.wait();
-        console.log('Mint transaction confirmed');
+        const receipt = await tx.wait();
+        console.log('Mint transaction confirmed:', receipt);
 
         // Refresh data
         await loadContractData();
         return tx.hash;
       } catch (error) {
+        console.error('Mint transaction error:', error);
         if (error.code === 'ACTION_REJECTED') {
           throw new Error('Transaction cancelled by user');
+        }
+        if (error.message && error.message.includes('insufficient funds')) {
+          throw new Error('Insufficient funds. You need at least 1 QUAI plus gas fees.');
         }
         throw error;
       }
 
     } catch (err) {
       console.error("Error minting NFT:", err);
-      if (err.code === 4001) {
-        setError('Transaction cancelled. Please try again.');
+      
+      // Properly handle the error object
+      if (err && typeof err === 'object') {
+        if (err.code === 4001) {
+          setError('Transaction cancelled. Please try again.');
+        } else if (err.message) {
+          setError(err.message);
+        } else {
+          setError('Failed to mint NFT. Please ensure you have 1 QUAI plus gas fees.');
+        }
       } else {
-        setError(err.message || 'Failed to mint NFT. Please ensure you have 1 QUAI plus gas fees and are connected to Cyprus-1 network.');
+        setError('An unexpected error occurred while minting. Please try again.');
       }
     } finally {
       setLoading(false);
