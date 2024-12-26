@@ -7,6 +7,44 @@ const detectPelagus = () => {
   return window.pelagus !== undefined && window.pelagus !== null;
 };
 
+// Helper function to check method support
+const checkMethodSupport = async (method) => {
+  if (!window.pelagus) return false;
+  
+  try {
+    // Try to call the method with minimal params
+    switch (method) {
+      case 'eth_accounts':
+      case 'quai_accounts':
+        await window.pelagus.request({ method });
+        break;
+      case 'eth_requestAccounts':
+      case 'quai_requestAccounts':
+        // Just check if method exists
+        if (typeof window.pelagus.request !== 'function') return false;
+        break;
+      case 'personal_sign':
+        await window.pelagus.request({
+          method,
+          params: ['test', '0x0000000000000000000000000000000000000000']
+        });
+        break;
+      default:
+        await window.pelagus.request({ method });
+    }
+    return true;
+  } catch (error) {
+    if (error.code === 4200) {
+      console.log(`Method ${method} not supported`);
+      return false;
+    }
+    // If error is about invalid params, method is supported
+    if (error.code === -32602) return true;
+    // For other errors, check if it's about method support
+    return !error.message?.includes('not supported');
+  }
+};
+
 // Helper function to check chain
 const checkChain = async (provider) => {
   try {
@@ -134,33 +172,37 @@ export function useQuaiProvider() {
         throw new Error('Please install Pelagus wallet');
       }
 
-      console.log('Requesting accounts from Pelagus...');
+      console.log('Checking available methods...');
+      const isQuaiSupported = await checkMethodSupport('quai_requestAccounts');
+      const isEthSupported = await checkMethodSupport('eth_requestAccounts');
+
+      if (!isQuaiSupported && !isEthSupported) {
+        throw new Error('No supported account request method found');
+      }
+
+      console.log('Method support:', {
+        quai_requestAccounts: isQuaiSupported,
+        eth_requestAccounts: isEthSupported
+      });
+
+      console.log('Requesting accounts...');
       let accounts;
       try {
-        // First try eth_requestAccounts as fallback
-        try {
+        if (isQuaiSupported) {
+          accounts = await window.pelagus.request({
+            method: 'quai_requestAccounts'
+          });
+          console.log('Account request successful (quai):', accounts);
+        } else {
           accounts = await window.pelagus.request({
             method: 'eth_requestAccounts'
           });
           console.log('Account request successful (eth):', accounts);
-        } catch (ethError) {
-          if (ethError.code === 4200) {
-            // If eth method not supported, try quai method
-            accounts = await window.pelagus.request({
-              method: 'quai_requestAccounts'
-            });
-            console.log('Account request successful (quai):', accounts);
-          } else {
-            throw ethError;
-          }
         }
       } catch (error) {
         console.error('Account request failed:', error);
-        // Handle specific error codes
         if (error.code === 4001) {
           throw new Error('You rejected the connection request');
-        } else if (error.code === 4200) {
-          throw new Error('Wallet method not supported. Please update your wallet');
         } else if (error.code === -32002) {
           throw new Error('Request already pending. Please check your wallet');
         } else if (error.code === -32603) {
@@ -269,23 +311,31 @@ export function useQuaiProvider() {
       try {
         console.group('Checking Existing Connection');
         
-        // Try eth_accounts first as fallback
+        console.log('Checking method support...');
+        const isQuaiSupported = await checkMethodSupport('quai_accounts');
+        const isEthSupported = await checkMethodSupport('eth_accounts');
+
+        console.log('Method support:', {
+          quai_accounts: isQuaiSupported,
+          eth_accounts: isEthSupported
+        });
+
+        if (!isQuaiSupported && !isEthSupported) {
+          console.log('No supported account query method found');
+          return;
+        }
+
         let accounts;
-        try {
+        if (isQuaiSupported) {
+          accounts = await window.pelagus.request({
+            method: 'quai_accounts'
+          });
+          console.log('Existing accounts (quai):', accounts);
+        } else {
           accounts = await window.pelagus.request({
             method: 'eth_accounts'
           });
           console.log('Existing accounts (eth):', accounts);
-        } catch (ethError) {
-          if (ethError.code === 4200) {
-            // If eth method not supported, try quai method
-            accounts = await window.pelagus.request({
-              method: 'quai_accounts'
-            });
-            console.log('Existing accounts (quai):', accounts);
-          } else {
-            throw ethError;
-          }
         }
         console.log('Found accounts:', accounts);
         
