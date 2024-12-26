@@ -137,27 +137,30 @@ export function useQuaiProvider() {
       console.log('Requesting accounts from Pelagus...');
       let accounts;
       try {
-        // Request accounts using proper method
-        accounts = await window.pelagus
-          .request({ 
-            method: 'quai_requestAccounts'
-          })
-          .then((result) => {
-            console.log('Account request successful:', result);
-            return result;
-          })
-          .catch((error) => {
-            console.error('Account request error:', error);
-            if (error.code === 4001) {
-              throw new Error('You rejected the connection request');
-            }
-            throw error;
+        // First try eth_requestAccounts as fallback
+        try {
+          accounts = await window.pelagus.request({
+            method: 'eth_requestAccounts'
           });
+          console.log('Account request successful (eth):', accounts);
+        } catch (ethError) {
+          if (ethError.code === 4200) {
+            // If eth method not supported, try quai method
+            accounts = await window.pelagus.request({
+              method: 'quai_requestAccounts'
+            });
+            console.log('Account request successful (quai):', accounts);
+          } else {
+            throw ethError;
+          }
+        }
       } catch (error) {
         console.error('Account request failed:', error);
         // Handle specific error codes
         if (error.code === 4001) {
           throw new Error('You rejected the connection request');
+        } else if (error.code === 4200) {
+          throw new Error('Wallet method not supported. Please update your wallet');
         } else if (error.code === -32002) {
           throw new Error('Request already pending. Please check your wallet');
         } else if (error.code === -32603) {
@@ -173,25 +176,28 @@ export function useQuaiProvider() {
       const currentAccount = accounts[0];
       console.log('Selected account:', currentAccount);
 
-      // Get zone information using quais SDK
-      const zone = quais.getZoneFromAddress(currentAccount);
-      console.log('Zone info:', zone);
-
-      if (!zone?.toLowerCase().includes('cyprus')) {
-        throw new Error('Please switch to a Cyprus-1 address');
+      // Check if it's a Cyprus-1 address
+      if (!currentAccount.toLowerCase().startsWith('0x00')) {
+        throw new Error('Please switch to a Cyprus-1 address (starting with 0x00)');
       }
 
-      // Set up Pelagus provider
-      console.log('Setting up Pelagus provider...');
+      // Set up providers
+      console.log('Setting up providers...');
       try {
-        // Create provider with node URL and network config
-        const quaiProvider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl, {
+        // Create RPC provider for network interactions
+        const rpcProvider = new quais.JsonRpcProvider(CHAIN_CONFIG.rpcUrl, {
+          name: CHAIN_CONFIG.name,
+          chainId: parseInt(CHAIN_CONFIG.chainId)
+        });
+
+        // Create Pelagus provider for signing
+        const pelagusProvider = new quais.Web3Provider(window.pelagus, {
           name: CHAIN_CONFIG.name,
           chainId: parseInt(CHAIN_CONFIG.chainId)
         });
 
         // Verify network
-        const network = await quaiProvider.getNetwork();
+        const network = await rpcProvider.getNetwork();
         console.log('Network info:', network);
 
         if (network.chainId.toString() !== CHAIN_CONFIG.chainId) {
@@ -203,12 +209,15 @@ export function useQuaiProvider() {
             });
           } catch (switchError) {
             console.error('Network switch error:', switchError);
+            if (switchError.code === 4200) {
+              throw new Error('Network switching not supported. Please switch manually to Cyprus-1');
+            }
             throw new Error('Please switch to Cyprus-1 network in Pelagus');
           }
         }
 
-        // Get signer from Pelagus
-        const quaiSigner = new quais.Web3Provider(window.pelagus).getSigner();
+        // Get signer from Pelagus provider
+        const quaiSigner = pelagusProvider.getSigner();
         
         // Set state
         setProvider(quaiProvider);
@@ -260,11 +269,25 @@ export function useQuaiProvider() {
       try {
         console.group('Checking Existing Connection');
         
-        // Check if we have permission to access accounts
-        const accounts = await window.pelagus.request({
-          method: 'quai_accounts'
-        });
-        console.log('Existing accounts:', accounts);
+        // Try eth_accounts first as fallback
+        let accounts;
+        try {
+          accounts = await window.pelagus.request({
+            method: 'eth_accounts'
+          });
+          console.log('Existing accounts (eth):', accounts);
+        } catch (ethError) {
+          if (ethError.code === 4200) {
+            // If eth method not supported, try quai method
+            accounts = await window.pelagus.request({
+              method: 'quai_accounts'
+            });
+            console.log('Existing accounts (quai):', accounts);
+          } else {
+            throw ethError;
+          }
+        }
+        console.log('Found accounts:', accounts);
         
         if (accounts?.length) {
           const currentAccount = accounts[0];
