@@ -318,16 +318,30 @@ const NFTMint = () => {
   }, []);
 
   const checkAndSwitchNetwork = async () => {
-    const chainId = await window.pelagus.request({ method: 'eth_chainId' });
-    if (chainId !== '0x2330') {
-      try {
-        await window.pelagus.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x2330' }], // Cyprus-1
-        });
-      } catch (error) {
-        throw new Error('Please connect to Cyprus-1 network in Pelagus');
+    try {
+      const provider = new quais.BrowserProvider(window.pelagus, undefined, { usePathing: true });
+      const network = await provider.getNetwork();
+      const chainId = network.chainId;
+      
+      console.log('Current chainId:', chainId.toString());
+      
+      // Cyprus-1 chainId is 0x2330
+      if (chainId.toString() !== '9008') {
+        try {
+          await window.pelagus.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2330' }],
+          });
+          // Wait a moment for the network switch to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error('Network switch failed:', error);
+          throw new Error('Please connect to Cyprus-1 network in Pelagus');
+        }
       }
+    } catch (error) {
+      console.error('Network check failed:', error);
+      throw new Error('Please connect to Cyprus-1 network in Pelagus');
     }
   };
 
@@ -443,15 +457,38 @@ const NFTMint = () => {
     if (!account) return;
     
     try {
-      // Get total mints for the wallet
-      const mintsResult = await readContract('0x8b7ada50', [account], false);
-      const totalMints = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      // Initialize provider and contract
+      const provider = new quais.BrowserProvider(window.pelagus, undefined, { usePathing: true });
       
-      // Fetch each NFT's metadata
+      // Contract ABI for balance checking
+      const contractABI = [
+        "function balanceOf(address owner) view returns (uint256)",
+        "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+        "function tokenURI(uint256 tokenId) view returns (string)"
+      ];
+      
+      const contract = new quais.Contract(NFT_CONTRACT_ADDRESS, contractABI, provider);
+      
+      // Get total NFTs owned by the account
+      const balance = await contract.balanceOf(account);
+      console.log('NFT balance:', Number(balance));
+      
+      // Get token IDs owned by the account
       const nfts = [];
-      for (let i = 1; i <= totalMints; i++) {
+      for (let i = 0; i < Number(balance); i++) {
         try {
-          const response = await fetch(`/assets/json/${i}`);
+          const tokenId = await contract.tokenOfOwnerByIndex(account, i);
+          const uri = await contract.tokenURI(tokenId);
+          nfts.push({
+            tokenId: Number(tokenId),
+            uri
+          });
+        } catch (error) {
+          console.error('Error fetching NFT:', error);
+        }
+      }
+      
+      setOwnedNFTs(nfts);
           if (response.ok) {
             const metadata = await response.json();
             nfts.push({
