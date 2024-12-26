@@ -95,26 +95,49 @@ export function useNFTContract(signer, provider, account) {
 
     const signedContract = contract.connect(signer);
 
-    // Prepare transaction options
-    const options = {
-      gasLimit: "0x2DC6C0", // 3,000,000 gas
-      maxFeePerGas: quais.parseUnits('20', 'gwei'),
-      maxPriorityFeePerGas: quais.parseUnits('20', 'gwei')
-    };
+    try {
+      // Prepare transaction options
+      const options = {
+        gasLimit: "0x2DC6C0", // 3,000,000 gas
+        maxFeePerGas: quais.parseUnits('20', 'gwei'),
+        maxPriorityFeePerGas: quais.parseUnits('20', 'gwei')
+      };
 
-    // Add value if not a free mint
-    if (!mintInfo.hasFreeMint) {
-      options.value = quais.parseEther('1.0');
+      // Add value if not a free mint
+      if (!mintInfo.hasFreeMint) {
+        options.value = quais.parseEther('1.0');
+      }
+
+      // Send transaction
+      const tx = await signedContract.mint(options);
+      console.log('Transaction sent:', tx.hash);
+      
+      const receipt = await tx.wait();
+      console.log('Transaction receipt:', receipt);
+
+      // Refresh data
+      await loadContractData();
+
+      return receipt;
+    } catch (error) {
+      console.error('Mint error:', error);
+      
+      // Handle specific contract revert reasons
+      if (error.message.includes('Minting is not enabled')) {
+        throw new Error('Minting is currently disabled');
+      } else if (error.message.includes('All tokens have been minted')) {
+        throw new Error('All NFTs have been minted');
+      } else if (error.message.includes('Max mints per wallet reached')) {
+        throw new Error('You have reached your maximum mint limit');
+      } else if (error.message.includes('Incorrect payment amount')) {
+        throw new Error('Incorrect payment amount. Please send 1 QUAI');
+      } else if (error.message.includes('Payment transfer failed')) {
+        throw new Error('Payment transfer failed. Please try again');
+      } else {
+        // If we can't determine the specific error, throw a generic one
+        throw new Error('Transaction failed. Please check your wallet and try again');
+      }
     }
-
-    // Send transaction
-    const tx = await signedContract.mint(options);
-    const receipt = await tx.wait();
-
-    // Refresh data
-    await loadContractData();
-
-    return receipt;
   };
 
   // Toggle minting (owner only)
