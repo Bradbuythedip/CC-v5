@@ -1,0 +1,19 @@
+{
+  "name": "croak-city-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for Croak City",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "hardhat run scripts/deploy.js --network cyprus1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0",
+    "ethers": "^5.7.2"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@openzeppelin/hardhat-upgrades": "^3.8.0",
+    "hardhat": "^2.22.17",
+    "dotenv": "^16.4.7"
+  }
+}

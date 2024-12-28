@@ -1,0 +1,11 @@
+{
+  "name": "Croak City #198",
+  "description": "A unique Croak City NFT collection on Quai Network",
+  "image": "https://www.croakcity.com/assets/images/198.jpg",
+  "attributes": [
+    {
+      "trait_type": "Edition",
+      "value": "198"
+    }
+  ]
+}

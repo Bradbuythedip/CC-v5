@@ -1,0 +1,69 @@
+  const loadContractData = async () => {
+    if (!MINTING_ENABLED) {
+      setError("Minting is not yet enabled");
+      return;
+    }
+
+    try {
+      // First check if we're already connected
+      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+      if (!accounts || accounts.length === 0) {
+        // Don't show an error, just return silently as we're not connected yet
+        return;
+      }
+
+      const currentAccount = accounts[0];
+
+      // Get all contract data in parallel
+      const [totalSupplyResult, maxSupplyResult, mintsResult] = await Promise.all([
+        readContract("0x18160ddd"),
+        readContract("0xd5abeb01"),
+        readContract("0x8b7ada50", [currentAccount])
+      ]);
+
+      // Parse results with default values
+      const total = totalSupplyResult ? parseInt(totalSupplyResult.slice(2), 16) : 0;
+      console.log("Total supply:", total);
+
+      const max = maxSupplyResult ? parseInt(maxSupplyResult.slice(2), 16) : 420;
+      console.log("Max supply:", max);
+
+      const mintsCount = mintsResult ? parseInt(mintsResult.slice(2), 16) : 0;
+      console.log("Current mints for wallet:", mintsCount);
+
+      // Calculate states
+      const hasUsedFree = mintsCount > 0;
+      const canMint = mintsCount < 20;
+      const shouldBeFree = !hasUsedFree;
+
+      console.log("Mint status:", {
+        hasUsedFree,
+        canMint,
+        shouldBeFree,
+        mintsCount
+      });
+
+      // Update all states
+      setTotalSupply(total);
+      setMaxSupply(max);
+      setHasFreeMint(shouldBeFree);
+
+    } catch (err) {
+      console.error("Error loading contract data:", err);
+      
+      // Check for common errors that we don't want to show to the user
+      const silentErrors = [
+        "Failed to read contract data",
+        "User rejected the request"
+      ];
+      
+      if (!silentErrors.includes(err.message) && (!err.code || err.code !== 4001)) {
+        setError(`Error loading contract data: ${err.message}`);
+      }
+
+      // Keep current values if we have them, otherwise use defaults
+      setTotalSupply(prev => prev || 0);
+      setMaxSupply(prev => prev || 420);
+      setHasFreeMint(prev => prev === undefined ? true : prev);
+    }
+  };

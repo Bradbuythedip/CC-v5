@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Brown #171",
+  "description": "A unique collection of Croak City Brown frogs",
+  "image": "ipfs://CroakCityBrown/51.png",
+  "dna": "4d423ad3bbb926749b50eda392c2c3e3fb80cb50",
+  "edition": 171,
+  "date": 1734990103090,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Navy"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Tears"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "O Mouth"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Glow"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

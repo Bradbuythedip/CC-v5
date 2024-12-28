@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Orange #342",
+  "description": "A unique collection of Croak City Orange frogs",
+  "image": "ipfs://CroakCityOrange/42.png",
+  "dna": "b5471f264555df04ae876dea122eb4e83066d8a8",
+  "edition": 342,
+  "date": 1734990172321,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Gold"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Regular"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Halo"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

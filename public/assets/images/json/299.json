@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Purple #299",
+  "description": "A unique collection of Croak City Purple frogs",
+  "image": "ipfs://CroakCityPurple/79.png",
+  "dna": "3850ddb844abe29d722f352c36c946ed5c01e78a",
+  "edition": 299,
+  "date": 1734990144551,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Stoop"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Wink"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Piff"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "Halo"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

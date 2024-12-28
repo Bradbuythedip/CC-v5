@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Red #104",
+  "description": "A collection of unique green frogs from Croak City",
+  "image": "ipfs://CroakCityRed/104.png",
+  "dna": "641ae33403728a7d1c11b35daa90f0241c7a5635",
+  "edition": 104,
+  "date": 1734989940915,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Sand"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Tears"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "None"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}

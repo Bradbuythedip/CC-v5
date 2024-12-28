@@ -1,0 +1,27 @@
+{
+  "name": "Croak City Red #394",
+  "description": "A unique collection of Croak City Red frogs",
+  "image": "ipfs://CroakCityRed/24.png",
+  "dna": "ad411ae1b26655284b560cd743a25a3bb639c0eb",
+  "edition": 394,
+  "date": 1734990199370,
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Grey"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Crazy Eyes"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "Neckbeard"
+    },
+    {
+      "trait_type": "Accessories",
+      "value": "None"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}
