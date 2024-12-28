@@ -630,14 +630,14 @@ const NFTMint = () => {
           stack: err.stack
         });
         
-        // Calculate actual gas cost in QUAI for better error messages
-        const estimatedGasCost = gasCost ? (gasCost / BigInt(1e18)).toString() : '0.0012';
+        // Default gas estimate for error messages
+        const DEFAULT_GAS_ESTIMATE = '0.0012';
         
         if (err.code === 4001) {
           // User rejected the transaction
           const message = shouldBeFree
-            ? `Please note: This is a free mint - you only need to pay gas fees (approximately ${estimatedGasCost} QUAI).`
-            : `Please note: The mint costs 1 QUAI plus gas fees (approximately ${estimatedGasCost} QUAI).`;
+            ? `Please note: This is a free mint - you only need to pay gas fees (approximately ${DEFAULT_GAS_ESTIMATE} QUAI).`
+            : `Please note: The mint costs 1 QUAI plus gas fees (approximately ${DEFAULT_GAS_ESTIMATE} QUAI).`;
             
           throw new Error(`Transaction cancelled. ${message} Please try again.`);
         }
@@ -645,8 +645,8 @@ const NFTMint = () => {
         if (err.message && err.message.toLowerCase().includes('insufficient')) {
           // Insufficient balance error
           const requiredTotal = shouldBeFree 
-            ? estimatedGasCost
-            : (BigInt(1e18) + gasCost) / BigInt(1e18);
+            ? DEFAULT_GAS_ESTIMATE
+            : '1.0012'; // 1 QUAI + estimated gas
             
           throw new Error(
             `Insufficient balance. You need ${requiredTotal} QUAI ${shouldBeFree ? 'for gas fees' : 'total (1 QUAI + gas fees)'}.`
