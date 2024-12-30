@@ -84,17 +84,53 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 
   async function checkConnection() {
     try {
-      const isPelagusReady = await waitForPelagus();
-      if (!isPelagusReady) {
-        throw new Error('Pelagus not available');
+      const isFirefox = /Firefox/.test(navigator.userAgent);
+      console.log('Checking connection for:', isFirefox ? 'Firefox' : 'Chrome');
+
+      // First check if extension is installed
+      if (!isPelagusInstalled()) {
+        if (isFirefox) {
+          dispatch({ type: 'SET_ERROR', payload: 'Please install Pelagus extension for Firefox' });
+          window.open('https://addons.mozilla.org/en-US/firefox/addon/pelagus/', '_blank');
+        } else {
+          dispatch({ type: 'SET_ERROR', payload: 'Please install Pelagus wallet' });
+          window.open('https://pelagus.space/download', '_blank');
+        }
+        return;
       }
 
-      const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        await initializeWeb3(accounts[0]);
+      // Wait for Pelagus to initialize
+      const isPelagusReady = await waitForPelagus();
+      if (!isPelagusReady) {
+        if (isFirefox) {
+          dispatch({ 
+            type: 'SET_ERROR', 
+            payload: 'Pelagus extension not responding. Please try refreshing the page or check extension permissions.' 
+          });
+        } else {
+          dispatch({ 
+            type: 'SET_ERROR', 
+            payload: 'Pelagus not available. Please make sure the extension is enabled.' 
+          });
+        }
+        return;
+      }
+
+      // Try to get accounts
+      try {
+        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          await initializeWeb3(accounts[0]);
+        }
+      } catch (accountError) {
+        console.error('Error getting accounts:', accountError);
+        if (isFirefox) {
+          toast.error('Please check if Pelagus extension has necessary permissions');
+        }
       }
     } catch (error) {
       console.error('Connection check failed:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to connect to wallet' });
     }
   }
 

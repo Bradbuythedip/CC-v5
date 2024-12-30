@@ -177,6 +177,42 @@ const NFTMint: React.FC = () => {
     }
   };
 
+  // Browser detection
+  const isFirefox = /Firefox/.test(navigator.userAgent);
+  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+  const isUnsupportedBrowser = !isFirefox && !isChrome;
+
+  // Get appropriate button text
+  const getButtonText = () => {
+    if (loading || isMinting) return null;
+    if (isUnsupportedBrowser) return 'Please use Chrome or Firefox';
+    if (!window.pelagus) return isFirefox ? 'Install Pelagus for Firefox' : 'Install Pelagus Wallet';
+    if (!isConnected) return 'Connect Wallet';
+    return `Mint ${mintAmount} NFT${mintAmount > 1 ? 's' : ''}`;
+  };
+
+  // Handle button click
+  const handleButtonClick = () => {
+    if (isUnsupportedBrowser) {
+      toast.error('Please use Chrome or Firefox to interact with Pelagus wallet');
+      return;
+    }
+    
+    if (!window.pelagus) {
+      const url = isFirefox 
+        ? 'https://addons.mozilla.org/en-US/firefox/addon/pelagus/'
+        : 'https://pelagus.space/download';
+      window.open(url, '_blank');
+      return;
+    }
+
+    if (!isConnected) {
+      connectWallet();
+    } else {
+      handleMint();
+    }
+  };
+
   return (
     <Box maxW="600px" mx="auto" p={6}>
       <VStack spacing={6}>
@@ -207,22 +243,15 @@ const NFTMint: React.FC = () => {
 
           {/* Main Action Button */}
           <Button
-            colorScheme="green"
-            onClick={!isConnected ? connectWallet : handleMint}
-            isDisabled={loading || isMinting}
+            colorScheme={isUnsupportedBrowser ? 'red' : 'green'}
+            onClick={handleButtonClick}
+            isDisabled={loading || isMinting || isUnsupportedBrowser}
             w="100%"
             size="lg"
           >
             {loading || isMinting ? (
               <Spinner size="sm" />
-            ) : !window.pelagus ? (
-              'Install Pelagus Wallet'
-            ) : !isConnected ? (
-              'Connect Wallet'
-            ) : (
-              `Mint ${mintAmount} NFT${mintAmount > 1 ? 's' : ''}`
-            )}
-          </Button>
+            ) : getButtonText()}
 
           {/* Owner Controls */}
           {isOwner && (

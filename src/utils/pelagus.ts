@@ -1,52 +1,65 @@
 export async function waitForPelagus() {
-  const maxAttempts = 50;
-  const checkInterval = 100;
+  const isFirefox = /Firefox/.test(navigator.userAgent);
+  const maxAttempts = isFirefox ? 40 : 50; // Increased attempts for Firefox
+  const checkInterval = isFirefox ? 500 : 100; // Longer interval for Firefox
+
+  console.log(`Starting Pelagus check for ${isFirefox ? 'Firefox' : 'Chrome'}...`);
 
   for (let attempts = 0; attempts < maxAttempts; attempts++) {
     try {
+      // First check if the object exists
       if (window.pelagus) {
-        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
-        if (chainId) {
-          console.log('Pelagus initialized with chain ID:', chainId);
-          return true;
+        // For Firefox, we need to wait a bit after the object appears
+        if (isFirefox) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
+
+        try {
+          // Test if methods are actually available
+          const chainId = await window.pelagus.request({ method: 'eth_chainId' });
+          const isMethodAvailable = typeof window.pelagus.request === 'function';
+          
+          if (chainId && isMethodAvailable) {
+            console.log('Pelagus initialized successfully:', {
+              chainId,
+              browser: isFirefox ? 'Firefox' : 'Chrome',
+              attempt: attempts + 1
+            });
+            return true;
+          }
+        } catch (methodError) {
+          console.log('Pelagus methods not ready yet:', methodError);
+          // In Firefox, sometimes the object exists but methods aren't ready
+          if (isFirefox) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+      } else {
+        console.log(`Waiting for Pelagus object... Attempt ${attempts + 1}/${maxAttempts}`);
       }
     } catch (error) {
-      console.log('Waiting for Pelagus to initialize...', attempts);
+      console.log('Error checking Pelagus:', error);
     }
     await new Promise(resolve => setTimeout(resolve, checkInterval));
   }
+
+  console.log('Pelagus initialization timed out');
   return false;
 }
 
-export async function waitForFirefoxPelagus() {
-  const maxAttempts = 20;
-  const interval = 500;
+// Helper function to check if extension is actually installed
+export function isPelagusInstalled(): boolean {
+  const isFirefox = /Firefox/.test(navigator.userAgent);
   
-  console.log('Starting Firefox Pelagus initialization check...');
-  
-  for (let i = 0; i < maxAttempts; i++) {
-    console.log(`Firefox Pelagus check attempt ${i + 1}/${maxAttempts}`);
-    
-    if (window.pelagus) {
-      try {
-        const chainId = await window.pelagus.request({ method: 'eth_chainId' });
-        const accounts = await window.pelagus.request({ method: 'eth_accounts' });
-        
-        if (chainId && typeof window.pelagus.request === 'function') {
-          console.log('Firefox Pelagus initialization successful');
-          return true;
-        }
-      } catch (err) {
-        console.log('Firefox Pelagus not ready yet:', err);
-      }
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, interval));
+  // Check for Firefox-specific extension attributes
+  if (isFirefox) {
+    const hasExtensionAttribute = document.documentElement.getAttribute('data-pelagus-extension') === 'true';
+    const hasObject = typeof window.pelagus !== 'undefined';
+    return hasExtensionAttribute || hasObject;
   }
   
-  console.log('Firefox Pelagus initialization timed out');
-  return false;
+  // For Chrome and others, just check if object exists
+  return typeof window.pelagus !== 'undefined';
 }
 
 export async function checkAndSwitchNetwork() {
