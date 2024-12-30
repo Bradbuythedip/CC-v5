@@ -1,68 +1,64 @@
 import React from 'react';
-import { Box, Button } from '@mui/material';
+import { Box, Button, Flex, HStack, Text, useColorModeValue } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
+import { useWeb3 } from '../context/Web3Context';
+import { formatAddress } from '../utils/pelagus';
 
 const Navigation = () => {
   const navigate = useNavigate();
+  const { state, connectWallet, disconnect } = useWeb3();
+  const { isConnected, account, loading } = state;
+
+  const bgColor = useColorModeValue('brand.secondary', 'blackAlpha.900');
+  const buttonBg = useColorModeValue('brand.primary', 'green.200');
+  const buttonText = useColorModeValue('brand.secondary', 'black');
 
   const handleAnalyticsClick = () => {
     navigate('/analytics');
   };
 
-  const handleConnectWallet = async () => {
-    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-    if (!isChrome) {
-      alert("Please use Chrome browser to connect Pelagus wallet");
-      return;
-    }
-
-    if (typeof window.pelagus !== 'undefined') {
-      try {
-        await window.pelagus.send('eth_requestAccounts');
-      } catch (err) {
-        console.error("Error connecting wallet:", err);
-      }
-    } else {
-      window.open('https://pelagus.space/download', '_blank');
-    }
-  };
-
   return (
-    <Box sx={{ 
-      position: 'absolute',
-      top: 20,
-      right: 20,
-      display: 'flex',
-      gap: 2
-    }}>
-      <Button
-        variant="contained"
-        onClick={handleAnalyticsClick}
-        sx={{
-          background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
-          color: '#0a1f13',
-          fontWeight: 'bold',
-          '&:hover': {
-            background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
-          },
-        }}
+    <Box>
+      <Flex
+        bg={bgColor}
+        w="100%"
+        px={4}
+        py={4}
+        justifyContent="space-between"
+        alignItems="center"
+        borderBottom="1px solid"
+        borderColor="brand.primary"
       >
-        Analytics
-      </Button>
-      <Button
-        variant="contained"
-        onClick={handleConnectWallet}
-        sx={{
-          background: 'linear-gradient(45deg, #00ff9d 30%, #00cc7d 90%)',
-          color: '#0a1f13',
-          fontWeight: 'bold',
-          '&:hover': {
-            background: 'linear-gradient(45deg, #00cc7d 30%, #00ff9d 90%)',
-          },
-        }}
-      >
-        {typeof window.pelagus !== 'undefined' ? 'Connect Wallet' : 'Install Pelagus'}
-      </Button>
+        <HStack spacing={4}>
+          <Text color="brand.primary" fontSize="xl" fontWeight="bold">
+            Croak City
+          </Text>
+        </HStack>
+        <HStack spacing={4}>
+          <Button
+            bg={buttonBg}
+            color={buttonText}
+            _hover={{ opacity: 0.8 }}
+            onClick={handleAnalyticsClick}
+          >
+            Analytics
+          </Button>
+          <Button
+            bg={buttonBg}
+            color={buttonText}
+            _hover={{ opacity: 0.8 }}
+            onClick={isConnected ? disconnect : connectWallet}
+            isLoading={loading}
+          >
+            {!window.pelagus 
+              ? 'Install Pelagus'
+              : isConnected 
+                ? formatAddress(account || '') 
+                : 'Connect Wallet'
+            }
+          </Button>
+        </HStack>
+      </Flex>
     </Box>
   );
 };

@@ -1,8 +1,29 @@
-import React, { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import React, { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ChakraProvider, extendTheme } from '@chakra-ui/react';
+import { Toaster } from 'react-hot-toast';
+import { Web3Provider } from './context/Web3Context';
 import '@fontsource/space-mono/400.css';
 import '@fontsource/space-mono/700.css';
-import App from './App.jsx'
+import App from './App';
+
+// Extend Chakra theme with custom colors
+const theme = extendTheme({
+  styles: {
+    global: {
+      body: {
+        bg: '#0a1f13',
+        color: 'white',
+      },
+    },
+  },
+  colors: {
+    brand: {
+      primary: '#00ff9d',
+      secondary: '#1a472a',
+    },
+  },
+});
 
 // Add global styles
 const style = document.createElement('style');
@@ -41,6 +62,20 @@ document.head.appendChild(style);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ChakraProvider theme={theme}>
+      <Web3Provider>
+        <App />
+        <Toaster 
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: '#1a472a',
+              color: '#fff',
+              border: '1px solid #00ff9d',
+            },
+          }}
+        />
+      </Web3Provider>
+    </ChakraProvider>
   </StrictMode>,
-)
+);

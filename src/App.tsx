@@ -1,19 +1,18 @@
 import React from 'react';
-import { ChakraProvider } from '@chakra-ui/react';
-import { Toaster } from 'react-hot-toast';
-import { Web3Provider } from './context/Web3Context';
+import { Box, Container, VStack } from '@chakra-ui/react';
 import NFTMint from './components/NFTMint';
+import Navigation from './components/Navigation';
 
 const App: React.FC = () => {
   return (
-    <ChakraProvider>
-      <Web3Provider>
-        <div className="App">
+    <Box minH="100vh" bg="brand.background">
+      <Navigation />
+      <Container maxW="container.xl" py={8}>
+        <VStack spacing={8}>
           <NFTMint />
-          <Toaster position="bottom-right" />
-        </div>
-      </Web3Provider>
-    </ChakraProvider>
+        </VStack>
+      </Container>
+    </Box>
   );
 };
 
