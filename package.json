@@ -5,18 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
+    "build": "tsc && vite build",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.2",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
-    "@fontsource/roboto": "^5.1.0",
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
     "@fontsource/space-mono": "^5.1.1",
-    "@mui/icons-material": "^6.3.0",
-    "@mui/material": "^6.2.1",
     "axios": "^1.7.9",
     "chart.js": "^4.4.7",
     "framer-motion": "^10.0.0",
@@ -32,20 +29,17 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
-    "@types/react": "^18.3.17",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "dotenv": "^16.4.7",
-    "eslint": "^9.17.0",
-    "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "eslint-plugin-react-refresh": "^0.4.16",
-    "globals": "^15.13.0",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "vite": "^6.0.3"
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.18.1",
+    "@typescript-eslint/parser": "^6.18.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
   },
   "overrides": {
     "ethers": "^5.7.2"
