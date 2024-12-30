@@ -21,15 +21,20 @@ async function main() {
     console.log(`Deploying from address: ${wallet.address}`);
 
     // Read the contract artifacts
-    const contractPath = join(__dirname, "../artifacts/contracts/CroakCity.sol/CroakCity.json");
+    const contractPath = join(__dirname, "../artifacts/contracts/CroakCityV2.sol/CroakCityV2.json");
     const contractArtifact = JSON.parse(readFileSync(contractPath, "utf8"));
+
+    // Get contract parameters from environment or defaults
+    const contractName = process.env.CONTRACT_NAME || "Croak City";
+    const contractSymbol = process.env.CONTRACT_SYMBOL || "CROAK";
+    const baseUri = process.env.BASE_URI || "https://www.croakcity.com/assets/json/";
 
     // Get the contract factory
     const factory = new Contract(null, contractArtifact.abi, wallet);
     const deployTx = factory.getDeployTransaction(
-      "Croak City",
-      "CROAK",
-      "https://www.croakcity.com/assets/json/",
+      contractName,
+      contractSymbol,
+      baseUri,
       {
         data: contractArtifact.bytecode,
         gasLimit: 8000000,
