@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { quais } from 'quais';
+import { formatUnits, parseUnits } from '@ethersproject/units';
 import {
   Box,
   Button,
-  Typography,
+  Text,
   Slider,
-  CircularProgress,
+  Spinner,
   Stack,
-  Link,
   Input,
-} from '@mui/material';
+  VStack,
+  HStack,
+  Heading,
+} from '@chakra-ui/react';
 import { toast } from 'react-hot-toast';
 import { useWeb3 } from '../context/Web3Context';
-import { formatAddress, formatEther } from '../utils/pelagus';
+import { formatAddress } from '../utils/pelagus';
 
 interface ContractStats {
   totalSupply: bigint;
@@ -31,7 +33,7 @@ const NFTMint: React.FC = () => {
   const [contractStats, setContractStats] = useState<ContractStats>({
     totalSupply: 0n,
     maxSupply: 420n,
-    mintPrice: quais.parseEther("1"),
+    mintPrice: parseUnits("1", 18),
     hasFreeMint: true,
     isWhitelisted: false,
     mintsPerWallet: 0n,
@@ -176,133 +178,138 @@ const NFTMint: React.FC = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
-      <Typography variant="h4" align="center" gutterBottom>
-        Croak City NFT Mint
-      </Typography>
+    <Box maxW="600px" mx="auto" p={6}>
+      <VStack spacing={6}>
+        <Heading size="xl" textAlign="center">
+          Croak City NFT Mint
+        </Heading>
 
-      <Stack spacing={3} alignItems="center">
-        {/* Mint Amount Slider */}
-        {isConnected && (
-          <Box sx={{ width: '100%', px: 2 }}>
-            <Typography gutterBottom>
-              Mint Amount: {mintAmount}
-            </Typography>
-            <Slider
-              value={mintAmount}
-              onChange={(_, value) => setMintAmount(value as number)}
-              min={1}
-              max={20}
-              marks
-              valueLabelDisplay="auto"
-              disabled={isMinting}
-            />
-            <Typography variant="body2" color="textSecondary">
-              Cost: {formatEther(calculateMintCost())} QUAI
-            </Typography>
-          </Box>
-        )}
-
-        {/* Main Action Button */}
-        <Button
-          variant="contained"
-          onClick={!isConnected ? connectWallet : handleMint}
-          disabled={loading || isMinting}
-          fullWidth
-        >
-          {loading || isMinting ? (
-            <CircularProgress size={24} />
-          ) : !window.pelagus ? (
-            'Install Pelagus Wallet'
-          ) : !isConnected ? (
-            'Connect Wallet'
-          ) : (
-            `Mint ${mintAmount} NFT${mintAmount > 1 ? 's' : ''}`
-          )}
-        </Button>
-
-        {/* Owner Controls */}
-        {isOwner && (
-          <Box sx={{ width: '100%', mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Owner Controls
-            </Typography>
-            
-            {/* Update Price */}
-            <Stack direction="row" spacing={2} mb={2}>
-              <Input
-                type="number"
-                placeholder="New Price (QUAI)"
-                value={newPrice}
-                onChange={(e) => setNewPrice(e.target.value)}
-                fullWidth
-              />
-              <Button
-                variant="outlined"
-                onClick={handleUpdatePrice}
-                disabled={!newPrice}
+        <VStack w="100%" spacing={4}>
+          {/* Mint Amount Slider */}
+          {isConnected && (
+            <Box w="100%" px={4}>
+              <Text mb={2}>
+                Mint Amount: {mintAmount}
+              </Text>
+              <Slider
+                value={mintAmount}
+                onChange={(value: number) => setMintAmount(value)}
+                min={1}
+                max={20}
+                isDisabled={isMinting}
               >
-                Update Price
-              </Button>
-            </Stack>
-
-            {/* Update Supply */}
-            <Stack direction="row" spacing={2} mb={2}>
-              <Input
-                type="number"
-                placeholder="New Max Supply"
-                value={newSupply}
-                onChange={(e) => setNewSupply(e.target.value)}
-                fullWidth
-              />
-              <Button
-                variant="outlined"
-                onClick={handleUpdateSupply}
-                disabled={!newSupply}
-              >
-                Update Supply
-              </Button>
-            </Stack>
-
-            {/* Withdraw */}
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleWithdraw}
-              fullWidth
-            >
-              Withdraw Funds
-            </Button>
-          </Box>
-        )}
-
-        {/* Contract Information */}
-        <Box sx={{ width: '100%', mt: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Contract Information
-          </Typography>
-          <Typography variant="body2">
-            Total Supply: {contractStats.totalSupply.toString()} / {contractStats.maxSupply.toString()}
-          </Typography>
-          <Typography variant="body2">
-            Mint Price: {formatEther(contractStats.mintPrice)} QUAI
-          </Typography>
-          <Typography variant="body2">
-            Your Mints: {contractStats.mintsPerWallet.toString()}
-          </Typography>
-          <Typography variant="body2">
-            Free Mint Available: {contractStats.hasFreeMint ? 'Yes' : 'No'}
-          </Typography>
-          <Typography variant="body2">
-            Whitelisted: {contractStats.isWhitelisted ? 'Yes' : 'No'}
-          </Typography>
-          {account && (
-            <Typography variant="body2">
-              Connected: {formatAddress(account)}
-            </Typography>
+              </Slider>
+              <Text fontSize="sm" color="gray.400">
+                Cost: {formatUnits(calculateMintCost(), 18)} QUAI
+              </Text>
+            </Box>
           )}
-        </Box>
-      </Stack>
+
+          {/* Main Action Button */}
+          <Button
+            colorScheme="green"
+            onClick={!isConnected ? connectWallet : handleMint}
+            isDisabled={loading || isMinting}
+            w="100%"
+            size="lg"
+          >
+            {loading || isMinting ? (
+              <Spinner size="sm" />
+            ) : !window.pelagus ? (
+              'Install Pelagus Wallet'
+            ) : !isConnected ? (
+              'Connect Wallet'
+            ) : (
+              `Mint ${mintAmount} NFT${mintAmount > 1 ? 's' : ''}`
+            )}
+          </Button>
+
+          {/* Owner Controls */}
+          {isOwner && (
+            <Box w="100%" mt={8}>
+              <Heading size="md" mb={4}>
+                Owner Controls
+              </Heading>
+              
+              {/* Update Price */}
+              <VStack spacing={4}>
+                <HStack w="100%" spacing={4}>
+                  <Input
+                    type="number"
+                    placeholder="New Price (QUAI)"
+                    value={newPrice}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPrice(e.target.value)}
+                    flex={1}
+                  />
+                  <Button
+                    colorScheme="blue"
+                    onClick={handleUpdatePrice}
+                    isDisabled={!newPrice}
+                  >
+                    Update Price
+                  </Button>
+                </HStack>
+
+                {/* Update Supply */}
+                <HStack w="100%" spacing={4}>
+                  <Input
+                    type="number"
+                    placeholder="New Max Supply"
+                    value={newSupply}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewSupply(e.target.value)}
+                    flex={1}
+                  />
+                  <Button
+                    colorScheme="blue"
+                    onClick={handleUpdateSupply}
+                    isDisabled={!newSupply}
+                  >
+                    Update Supply
+                  </Button>
+                </HStack>
+
+                {/* Withdraw */}
+                <Button
+                  colorScheme="purple"
+                  onClick={handleWithdraw}
+                  w="100%"
+                >
+                  Withdraw Funds
+                </Button>
+              </VStack>
+            </Box>
+          )}
+
+          {/* Contract Information */}
+          <Box w="100%" mt={8}>
+            <Heading size="md" mb={4}>
+              Contract Information
+            </Heading>
+            <VStack align="start" spacing={2}>
+              <Text>
+                Total Supply: {contractStats.totalSupply.toString()} / {contractStats.maxSupply.toString()}
+              </Text>
+              <Text>
+                Mint Price: {formatUnits(contractStats.mintPrice, 18)} QUAI
+              </Text>
+              <Text>
+                Your Mints: {contractStats.mintsPerWallet.toString()}
+              </Text>
+              <Text>
+                Free Mint Available: {contractStats.hasFreeMint ? 'Yes' : 'No'}
+              </Text>
+              <Text>
+                Whitelisted: {contractStats.isWhitelisted ? 'Yes' : 'No'}
+              </Text>
+              {account && (
+                <Text>
+                  Connected: {formatAddress(account)}
+                </Text>
+              )}
+            </VStack>
+          </Box>
+        </VStack>
+      </VStack>
     </Box>
   );
 };
